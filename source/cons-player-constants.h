@@ -17,13 +17,14 @@ namespace ConsPlayerConstants
 	constexpr int_fast32_t cvLayerCount = sizeof(cvLayerSizes) / sizeof(int_fast32_t);
 
 	constexpr int_fast32_t maxGameMoveCount = 100;
-	constexpr int_fast32_t maxMoveEvaluationCount = 500;
+	constexpr int_fast32_t maxMoveEvaluationCountLow = 300;
+	constexpr int_fast32_t maxMoveEvaluationCountHigh = 1000;
 	constexpr bool tieBreakWithPieceScore = true;
 
 	constexpr int_fast32_t generationSize = 20;
 	constexpr int_fast32_t generationTournamentSize = 4;
 	constexpr float mutationRate = 0.05;
-	constexpr float mutationAmount = 0.1;
+	constexpr float mutationAmount = 0.05;
 
 	constexpr int_fast32_t TVWeightCount()
 	{

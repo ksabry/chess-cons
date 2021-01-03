@@ -57,7 +57,8 @@ void ConsPlayer::Save(std::filesystem::path filename)
 		file << ConsPlayerConstants::tvLayerCount << " ";
 		file << ConsPlayerConstants::cvLayerCount << " ";
 		file << ConsPlayerConstants::maxGameMoveCount << " ";
-		file << ConsPlayerConstants::maxMoveEvaluationCount << " ";
+		file << ConsPlayerConstants::maxMoveEvaluationCountLow << " ";
+		file << ConsPlayerConstants::maxMoveEvaluationCountHigh << " ";
 		file << (ConsPlayerConstants::tieBreakWithPieceScore ? 1 : 0) << " ";
 		file << ConsPlayerConstants::generationSize << " ";
 		file << ConsPlayerConstants::generationTournamentSize << " ";
@@ -124,7 +125,8 @@ void ConsPlayer::Load(std::filesystem::path filename, ConsPlayer * player)
 			tvLayerCount,
 			cvLayerCount,
 			maxGameMoveCount,
-			maxMoveEvaluationCount,
+			maxMoveEvaluationCountLow,
+			maxMoveEvaluationCountHigh,
 			tieBreakWithPieceScore,
 			generationSize,
 			generationTournamentSize
@@ -136,7 +138,8 @@ void ConsPlayer::Load(std::filesystem::path filename, ConsPlayer * player)
 		file >> tvLayerCount;
 		file >> cvLayerCount;
 		file >> maxGameMoveCount;
-		file >> maxMoveEvaluationCount;
+		file >> maxMoveEvaluationCountLow;
+		file >> maxMoveEvaluationCountHigh;
 		file >> tieBreakWithPieceScore;
 		file >> generationSize;
 		file >> generationTournamentSize;
@@ -169,10 +172,15 @@ void ConsPlayer::Load(std::filesystem::path filename, ConsPlayer * player)
 			constants_correct = false;
 			std::cerr << "Failed to load "s + filename.string() + "; Expected maxGameMoveCount = " << ConsPlayerConstants::maxGameMoveCount << " but file has " << maxGameMoveCount << std::endl;
 		}
-		if (maxMoveEvaluationCount != ConsPlayerConstants::maxMoveEvaluationCount)
+		if (maxMoveEvaluationCountLow != ConsPlayerConstants::maxMoveEvaluationCountLow)
 		{
 			constants_correct = false;
-			std::cerr << "Failed to load "s + filename.string() + "; Expected maxMoveEvaluationCount = " << ConsPlayerConstants::maxMoveEvaluationCount << " but file has " << maxMoveEvaluationCount << std::endl;
+			std::cerr << "Failed to load "s + filename.string() + "; Expected maxMoveEvaluationCountLow = " << ConsPlayerConstants::maxMoveEvaluationCountLow << " but file has " << maxMoveEvaluationCountLow << std::endl;
+		}
+		if (maxMoveEvaluationCountHigh != ConsPlayerConstants::maxMoveEvaluationCountHigh)
+		{
+			constants_correct = false;
+			std::cerr << "Failed to load "s + filename.string() + "; Expected maxMoveEvaluationCountHigh = " << ConsPlayerConstants::maxMoveEvaluationCountHigh << " but file has " << maxMoveEvaluationCountHigh << std::endl;
 		}
 		if (static_cast<bool>(tieBreakWithPieceScore) != ConsPlayerConstants::tieBreakWithPieceScore)
 		{

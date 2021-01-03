@@ -18,6 +18,13 @@ GameState::GameState() :
 	whiteKingY(0),
 	blackKingX(4),
 	blackKingY(7)
+#ifdef PRINT_LAST_MOVE
+	,
+	lastMoveStartX(-1),
+	lastMoveStartY(-1),
+	lastMoveEndX(-1),
+	lastMoveEndY(-1)
+#endif
 {
 }
 
@@ -109,6 +116,7 @@ int_fast32_t GameState::BlackPieceScore() const
 	return total;
 }
 
+// TODO: we should probably cache this value on the instance, but we need to be careful with certain cases such as the repeated calls during a castling validity check
 bool GameState::IsWhiteInCheck() const
 {
 	int_fast32_t tx, ty;
@@ -295,6 +303,7 @@ bool GameState::IsWhiteInCheck() const
 	return false;
 }
 
+// TODO: we should probably cache this value on the instance, but we need to be careful with certain cases such as the repeated calls during a castling validity check
 bool GameState::IsBlackInCheck() const
 {
 	int_fast32_t tx, ty;
@@ -481,7 +490,7 @@ bool GameState::IsBlackInCheck() const
 	return false;
 }
 
-void GameState::NextGameStates(std::vector<GameState>& output) const
+void GameState::NextGameStates(std::vector<GameState> & output) const
 {
 	GameState nextState;
 	int_fast32_t x, y, tx, ty;
@@ -506,6 +515,7 @@ void GameState::NextGameStates(std::vector<GameState>& output) const
 							CloneForNextMove;
 							nextState.SetTile(x, 6, Tile::Empty);
 							nextState.SetTile(x, 7, Tile::WhiteQueen);
+							SetLastMove(x, 6, x, 7);
 							if (!nextState.IsWhiteInCheck())
 							{
 								output.push_back(nextState);
@@ -514,6 +524,7 @@ void GameState::NextGameStates(std::vector<GameState>& output) const
 							CloneForNextMove;
 							nextState.SetTile(x, 6, Tile::Empty);
 							nextState.SetTile(x, 7, Tile::WhiteKnight);
+							SetLastMove(x, 6, x, 7);
 							if (!nextState.IsWhiteInCheck())
 							{
 								output.push_back(nextState);
@@ -522,6 +533,7 @@ void GameState::NextGameStates(std::vector<GameState>& output) const
 							CloneForNextMove;
 							nextState.SetTile(x, 6, Tile::Empty);
 							nextState.SetTile(x, 7, Tile::WhiteBishop);
+							SetLastMove(x, 6, x, 7);
 							if (!nextState.IsWhiteInCheck())
 							{
 								output.push_back(nextState);
@@ -530,6 +542,7 @@ void GameState::NextGameStates(std::vector<GameState>& output) const
 							CloneForNextMove;
 							nextState.SetTile(x, 6, Tile::Empty);
 							nextState.SetTile(x, 7, Tile::WhiteRook);
+							SetLastMove(x, 6, x, 7);
 							if (!nextState.IsWhiteInCheck())
 							{
 								output.push_back(nextState);
@@ -541,6 +554,7 @@ void GameState::NextGameStates(std::vector<GameState>& output) const
 							CloneForNextMove;
 							nextState.SetTile(x, y, Tile::Empty);
 							nextState.SetTile(x, y + 1, Tile::WhitePawn);
+							SetLastMove(x, y, x, y + 1);
 							if (!nextState.IsWhiteInCheck())
 							{
 								output.push_back(nextState);
@@ -552,6 +566,7 @@ void GameState::NextGameStates(std::vector<GameState>& output) const
 								CloneForNextMove;
 								nextState.SetTile(x, 1, Tile::Empty);
 								nextState.SetTile(x, 3, Tile::WhitePawn);
+								SetLastMove(x, 1, x, 3);
 								if (!nextState.IsWhiteInCheck())
 								{
 									nextState.enPassantPawn = x;
@@ -568,6 +583,7 @@ void GameState::NextGameStates(std::vector<GameState>& output) const
 							CloneForNextMove;
 							nextState.SetTile(x, 6, Tile::Empty);
 							nextState.SetTile(x - 1, 7, Tile::WhiteQueen);
+							SetLastMove(x, 6, x - 1, 7);
 							if (!nextState.IsWhiteInCheck())
 							{
 								output.push_back(nextState);
@@ -576,6 +592,7 @@ void GameState::NextGameStates(std::vector<GameState>& output) const
 							CloneForNextMove;
 							nextState.SetTile(x, 6, Tile::Empty);
 							nextState.SetTile(x - 1, 7, Tile::WhiteKnight);
+							SetLastMove(x, 6, x - 1, 7);
 							if (!nextState.IsWhiteInCheck())
 							{
 								output.push_back(nextState);
@@ -584,6 +601,7 @@ void GameState::NextGameStates(std::vector<GameState>& output) const
 							CloneForNextMove;
 							nextState.SetTile(x, 6, Tile::Empty);
 							nextState.SetTile(x - 1, 7, Tile::WhiteBishop);
+							SetLastMove(x, 6, x - 1, 7);
 							if (!nextState.IsWhiteInCheck())
 							{
 								output.push_back(nextState);
@@ -592,6 +610,7 @@ void GameState::NextGameStates(std::vector<GameState>& output) const
 							CloneForNextMove;
 							nextState.SetTile(x, 6, Tile::Empty);
 							nextState.SetTile(x - 1, 7, Tile::WhiteRook);
+							SetLastMove(x, 6, x - 1, 7);
 							if (!nextState.IsWhiteInCheck())
 							{
 								output.push_back(nextState);
@@ -603,6 +622,7 @@ void GameState::NextGameStates(std::vector<GameState>& output) const
 							CloneForNextMove;
 							nextState.SetTile(x, y, Tile::Empty);
 							nextState.SetTile(x - 1, y + 1, Tile::WhitePawn);
+							SetLastMove(x, y, x - 1, y + 1);
 							if (!nextState.IsWhiteInCheck())
 							{
 								output.push_back(nextState);
@@ -617,6 +637,7 @@ void GameState::NextGameStates(std::vector<GameState>& output) const
 							CloneForNextMove;
 							nextState.SetTile(x, 6, Tile::Empty);
 							nextState.SetTile(x + 1, 7, Tile::WhiteQueen);
+							SetLastMove(x, 6, x + 1, 7);
 							if (!nextState.IsWhiteInCheck())
 							{
 								output.push_back(nextState);
@@ -625,6 +646,7 @@ void GameState::NextGameStates(std::vector<GameState>& output) const
 							CloneForNextMove;
 							nextState.SetTile(x, 6, Tile::Empty);
 							nextState.SetTile(x + 1, 7, Tile::WhiteKnight);
+							SetLastMove(x, 6, x + 1, 7);
 							if (!nextState.IsWhiteInCheck())
 							{
 								output.push_back(nextState);
@@ -633,6 +655,7 @@ void GameState::NextGameStates(std::vector<GameState>& output) const
 							CloneForNextMove;
 							nextState.SetTile(x, 6, Tile::Empty);
 							nextState.SetTile(x + 1, 7, Tile::WhiteBishop);
+							SetLastMove(x, 6, x + 1, 7);
 							if (!nextState.IsWhiteInCheck())
 							{
 								output.push_back(nextState);
@@ -641,6 +664,7 @@ void GameState::NextGameStates(std::vector<GameState>& output) const
 							CloneForNextMove;
 							nextState.SetTile(x, 6, Tile::Empty);
 							nextState.SetTile(x + 1, 7, Tile::WhiteRook);
+							SetLastMove(x, 6, x + 1, 7);
 							if (!nextState.IsWhiteInCheck())
 							{
 								output.push_back(nextState);
@@ -652,6 +676,7 @@ void GameState::NextGameStates(std::vector<GameState>& output) const
 							CloneForNextMove;
 							nextState.SetTile(x, y, Tile::Empty);
 							nextState.SetTile(x + 1, y + 1, Tile::WhitePawn);
+							SetLastMove(x, y, x + 1, y + 1);
 							if (!nextState.IsWhiteInCheck())
 							{
 								output.push_back(nextState);
@@ -665,6 +690,7 @@ void GameState::NextGameStates(std::vector<GameState>& output) const
 						nextState.SetTile(x, y, Tile::Empty);
 						nextState.SetTile(enPassantPawn, 4, Tile::Empty);
 						nextState.SetTile(enPassantPawn, 5, Tile::WhitePawn);
+						SetLastMove(x, y, enPassantPawn, 5);
 						if (!nextState.IsWhiteInCheck())
 						{
 							output.push_back(nextState);
@@ -690,6 +716,7 @@ void GameState::NextGameStates(std::vector<GameState>& output) const
 							CloneForNextMove;
 							nextState.SetTile(x, y, Tile::Empty);
 							nextState.SetTile(tx, y, tile);
+							SetLastMove(x, y, tx, y);
 							if (!nextState.IsWhiteInCheck())
 							{
 								nextState.castlesAvailable &= castlesAvailableModifier;
@@ -705,6 +732,7 @@ void GameState::NextGameStates(std::vector<GameState>& output) const
 								nextState.SetTile(x, y, Tile::Empty);
 								nextState.SetTile(tx, y, tile);
 								nextState.castlesAvailable &= castlesAvailableModifier;
+								SetLastMove(x, y, tx, y);
 								if (!nextState.IsWhiteInCheck())
 								{
 									output.push_back(nextState);
@@ -721,6 +749,7 @@ void GameState::NextGameStates(std::vector<GameState>& output) const
 							CloneForNextMove;
 							nextState.SetTile(x, y, Tile::Empty);
 							nextState.SetTile(tx, y, tile);
+							SetLastMove(x, y, tx, y);
 							if (!nextState.IsWhiteInCheck())
 							{
 								nextState.castlesAvailable &= castlesAvailableModifier;
@@ -735,6 +764,7 @@ void GameState::NextGameStates(std::vector<GameState>& output) const
 								CloneForNextMove;
 								nextState.SetTile(x, y, Tile::Empty);
 								nextState.SetTile(tx, y, tile);
+								SetLastMove(x, y, tx, y);
 								if (!nextState.IsWhiteInCheck())
 								{
 									nextState.castlesAvailable &= castlesAvailableModifier;
@@ -752,6 +782,7 @@ void GameState::NextGameStates(std::vector<GameState>& output) const
 							CloneForNextMove;
 							nextState.SetTile(x, y, Tile::Empty);
 							nextState.SetTile(x, ty, tile);
+							SetLastMove(x, y, x, ty);
 							if (!nextState.IsWhiteInCheck())
 							{
 								nextState.castlesAvailable &= castlesAvailableModifier;
@@ -766,6 +797,7 @@ void GameState::NextGameStates(std::vector<GameState>& output) const
 								CloneForNextMove;
 								nextState.SetTile(x, y, Tile::Empty);
 								nextState.SetTile(x, ty, tile);
+								SetLastMove(x, y, x, ty);
 								if (!nextState.IsWhiteInCheck())
 								{
 									nextState.castlesAvailable &= castlesAvailableModifier;
@@ -783,6 +815,7 @@ void GameState::NextGameStates(std::vector<GameState>& output) const
 							CloneForNextMove;
 							nextState.SetTile(x, y, Tile::Empty);
 							nextState.SetTile(x, ty, tile);
+							SetLastMove(x, y, x, ty);
 							if (!nextState.IsWhiteInCheck())
 							{
 								nextState.castlesAvailable &= castlesAvailableModifier;
@@ -797,6 +830,7 @@ void GameState::NextGameStates(std::vector<GameState>& output) const
 								CloneForNextMove;
 								nextState.SetTile(x, y, Tile::Empty);
 								nextState.SetTile(x, ty, tile);
+								SetLastMove(x, y, x, ty);
 								if (!nextState.IsWhiteInCheck())
 								{
 									nextState.castlesAvailable &= castlesAvailableModifier;
@@ -817,6 +851,7 @@ void GameState::NextGameStates(std::vector<GameState>& output) const
 							CloneForNextMove;
 							nextState.SetTile(x, y, Tile::Empty);
 							nextState.SetTile(x - 2, y - 1, tile);
+							SetLastMove(x, y, x - 2, y - 1);
 							if (!nextState.IsWhiteInCheck())
 							{
 								output.push_back(nextState);
@@ -828,6 +863,7 @@ void GameState::NextGameStates(std::vector<GameState>& output) const
 							CloneForNextMove;
 							nextState.SetTile(x, y, Tile::Empty);
 							nextState.SetTile(x - 2, y + 1, tile);
+							SetLastMove(x, y, x - 2, y + 1);
 							if (!nextState.IsWhiteInCheck())
 							{
 								output.push_back(nextState);
@@ -842,6 +878,7 @@ void GameState::NextGameStates(std::vector<GameState>& output) const
 							CloneForNextMove;
 							nextState.SetTile(x, y, Tile::Empty);
 							nextState.SetTile(x - 1, y - 2, tile);
+							SetLastMove(x, y, x - 1, y - 2);
 							if (!nextState.IsWhiteInCheck())
 							{
 								output.push_back(nextState);
@@ -853,6 +890,7 @@ void GameState::NextGameStates(std::vector<GameState>& output) const
 							CloneForNextMove;
 							nextState.SetTile(x, y, Tile::Empty);
 							nextState.SetTile(x - 1, y + 2, tile);
+							SetLastMove(x, y, x - 1, y + 2);
 							if (!nextState.IsWhiteInCheck())
 							{
 								output.push_back(nextState);
@@ -867,6 +905,7 @@ void GameState::NextGameStates(std::vector<GameState>& output) const
 							CloneForNextMove;
 							nextState.SetTile(x, y, Tile::Empty);
 							nextState.SetTile(x + 2, y - 1, tile);
+							SetLastMove(x, y, x + 2, y - 1);
 							if (!nextState.IsWhiteInCheck())
 							{
 								output.push_back(nextState);
@@ -878,6 +917,7 @@ void GameState::NextGameStates(std::vector<GameState>& output) const
 							CloneForNextMove;
 							nextState.SetTile(x, y, Tile::Empty);
 							nextState.SetTile(x + 2, y + 1, tile);
+							SetLastMove(x, y, x + 2, y + 1);
 							if (!nextState.IsWhiteInCheck())
 							{
 								output.push_back(nextState);
@@ -892,6 +932,7 @@ void GameState::NextGameStates(std::vector<GameState>& output) const
 							CloneForNextMove;
 							nextState.SetTile(x, y, Tile::Empty);
 							nextState.SetTile(x + 1, y - 2, tile);
+							SetLastMove(x, y, x + 1, y - 2);
 							if (!nextState.IsWhiteInCheck())
 							{
 								output.push_back(nextState);
@@ -903,6 +944,7 @@ void GameState::NextGameStates(std::vector<GameState>& output) const
 							CloneForNextMove;
 							nextState.SetTile(x, y, Tile::Empty);
 							nextState.SetTile(x + 1, y + 2, tile);
+							SetLastMove(x, y, x + 1, y + 2);
 							if (!nextState.IsWhiteInCheck())
 							{
 								output.push_back(nextState);
@@ -922,6 +964,7 @@ void GameState::NextGameStates(std::vector<GameState>& output) const
 							CloneForNextMove;
 							nextState.SetTile(x, y, Tile::Empty);
 							nextState.SetTile(tx, ty, tile);
+							SetLastMove(x, y, tx, ty);
 							if (!nextState.IsWhiteInCheck())
 							{
 								output.push_back(nextState);
@@ -935,6 +978,7 @@ void GameState::NextGameStates(std::vector<GameState>& output) const
 								CloneForNextMove;
 								nextState.SetTile(x, y, Tile::Empty);
 								nextState.SetTile(tx, ty, tile);
+								SetLastMove(x, y, tx, ty);
 								if (!nextState.IsWhiteInCheck())
 								{
 									output.push_back(nextState);
@@ -955,6 +999,7 @@ void GameState::NextGameStates(std::vector<GameState>& output) const
 							CloneForNextMove;
 							nextState.SetTile(x, y, Tile::Empty);
 							nextState.SetTile(tx, ty, tile);
+							SetLastMove(x, y, tx, ty);
 							if (!nextState.IsWhiteInCheck())
 							{
 								output.push_back(nextState);
@@ -968,6 +1013,7 @@ void GameState::NextGameStates(std::vector<GameState>& output) const
 								CloneForNextMove;
 								nextState.SetTile(x, y, Tile::Empty);
 								nextState.SetTile(tx, ty, tile);
+								SetLastMove(x, y, tx, ty);
 								if (!nextState.IsWhiteInCheck())
 								{
 									output.push_back(nextState);
@@ -988,6 +1034,7 @@ void GameState::NextGameStates(std::vector<GameState>& output) const
 							CloneForNextMove;
 							nextState.SetTile(x, y, Tile::Empty);
 							nextState.SetTile(tx, ty, tile);
+							SetLastMove(x, y, tx, ty);
 							if (!nextState.IsWhiteInCheck())
 							{
 								output.push_back(nextState);
@@ -1001,6 +1048,7 @@ void GameState::NextGameStates(std::vector<GameState>& output) const
 								CloneForNextMove;
 								nextState.SetTile(x, y, Tile::Empty);
 								nextState.SetTile(tx, ty, tile);
+								SetLastMove(x, y, tx, ty);
 								if (!nextState.IsWhiteInCheck())
 								{
 									output.push_back(nextState);
@@ -1021,6 +1069,7 @@ void GameState::NextGameStates(std::vector<GameState>& output) const
 							CloneForNextMove;
 							nextState.SetTile(x, y, Tile::Empty);
 							nextState.SetTile(tx, ty, tile);
+							SetLastMove(x, y, tx, ty);
 							if (!nextState.IsWhiteInCheck())
 							{
 								output.push_back(nextState);
@@ -1034,6 +1083,7 @@ void GameState::NextGameStates(std::vector<GameState>& output) const
 								CloneForNextMove;
 								nextState.SetTile(x, y, Tile::Empty);
 								nextState.SetTile(tx, ty, tile);
+								SetLastMove(x, y, tx, ty);
 								if (!nextState.IsWhiteInCheck())
 								{
 									output.push_back(nextState);
@@ -1055,6 +1105,7 @@ void GameState::NextGameStates(std::vector<GameState>& output) const
 							CloneForNextMove;
 							nextState.SetTile(x, y, Tile::Empty);
 							nextState.SetTile(tx, y, tile);
+							SetLastMove(x, y, tx, y);
 							if (!nextState.IsWhiteInCheck())
 							{
 								output.push_back(nextState);
@@ -1068,6 +1119,7 @@ void GameState::NextGameStates(std::vector<GameState>& output) const
 								CloneForNextMove;
 								nextState.SetTile(x, y, Tile::Empty);
 								nextState.SetTile(tx, y, tile);
+								SetLastMove(x, y, tx, y);
 								if (!nextState.IsWhiteInCheck())
 								{
 									output.push_back(nextState);
@@ -1084,6 +1136,7 @@ void GameState::NextGameStates(std::vector<GameState>& output) const
 							CloneForNextMove;
 							nextState.SetTile(x, y, Tile::Empty);
 							nextState.SetTile(tx, y, tile);
+							SetLastMove(x, y, tx, y);
 							if (!nextState.IsWhiteInCheck())
 							{
 								output.push_back(nextState);
@@ -1097,6 +1150,7 @@ void GameState::NextGameStates(std::vector<GameState>& output) const
 								CloneForNextMove;
 								nextState.SetTile(x, y, Tile::Empty);
 								nextState.SetTile(tx, y, tile);
+								SetLastMove(x, y, tx, y);
 								if (!nextState.IsWhiteInCheck())
 								{
 									output.push_back(nextState);
@@ -1113,6 +1167,7 @@ void GameState::NextGameStates(std::vector<GameState>& output) const
 							CloneForNextMove;
 							nextState.SetTile(x, y, Tile::Empty);
 							nextState.SetTile(x, ty, tile);
+							SetLastMove(x, y, x, ty);
 							if (!nextState.IsWhiteInCheck())
 							{
 								output.push_back(nextState);
@@ -1126,6 +1181,7 @@ void GameState::NextGameStates(std::vector<GameState>& output) const
 								CloneForNextMove;
 								nextState.SetTile(x, y, Tile::Empty);
 								nextState.SetTile(x, ty, tile);
+								SetLastMove(x, y, x, ty);
 								if (!nextState.IsWhiteInCheck())
 								{
 									output.push_back(nextState);
@@ -1142,6 +1198,7 @@ void GameState::NextGameStates(std::vector<GameState>& output) const
 							CloneForNextMove;
 							nextState.SetTile(x, y, Tile::Empty);
 							nextState.SetTile(x, ty, tile);
+							SetLastMove(x, y, x, ty);
 							if (!nextState.IsWhiteInCheck())
 							{
 								output.push_back(nextState);
@@ -1155,6 +1212,7 @@ void GameState::NextGameStates(std::vector<GameState>& output) const
 								CloneForNextMove;
 								nextState.SetTile(x, y, Tile::Empty);
 								nextState.SetTile(x, ty, tile);
+								SetLastMove(x, y, x, ty);
 								if (!nextState.IsWhiteInCheck())
 								{
 									output.push_back(nextState);
@@ -1173,6 +1231,7 @@ void GameState::NextGameStates(std::vector<GameState>& output) const
 							CloneForNextMove;
 							nextState.SetTile(x, y, Tile::Empty);
 							nextState.SetTile(tx, ty, tile);
+							SetLastMove(x, y, tx, ty);
 							if (!nextState.IsWhiteInCheck())
 							{
 								output.push_back(nextState);
@@ -1186,6 +1245,7 @@ void GameState::NextGameStates(std::vector<GameState>& output) const
 								CloneForNextMove;
 								nextState.SetTile(x, y, Tile::Empty);
 								nextState.SetTile(tx, ty, tile);
+								SetLastMove(x, y, tx, ty);
 								if (!nextState.IsWhiteInCheck())
 								{
 									output.push_back(nextState);
@@ -1206,6 +1266,7 @@ void GameState::NextGameStates(std::vector<GameState>& output) const
 							CloneForNextMove;
 							nextState.SetTile(x, y, Tile::Empty);
 							nextState.SetTile(tx, ty, tile);
+							SetLastMove(x, y, tx, ty);
 							if (!nextState.IsWhiteInCheck())
 							{
 								output.push_back(nextState);
@@ -1219,6 +1280,7 @@ void GameState::NextGameStates(std::vector<GameState>& output) const
 								CloneForNextMove;
 								nextState.SetTile(x, y, Tile::Empty);
 								nextState.SetTile(tx, ty, tile);
+								SetLastMove(x, y, tx, ty);
 								if (!nextState.IsWhiteInCheck())
 								{
 									output.push_back(nextState);
@@ -1239,6 +1301,7 @@ void GameState::NextGameStates(std::vector<GameState>& output) const
 							CloneForNextMove;
 							nextState.SetTile(x, y, Tile::Empty);
 							nextState.SetTile(tx, ty, tile);
+							SetLastMove(x, y, tx, ty);
 							if (!nextState.IsWhiteInCheck())
 							{
 								output.push_back(nextState);
@@ -1252,6 +1315,7 @@ void GameState::NextGameStates(std::vector<GameState>& output) const
 								CloneForNextMove;
 								nextState.SetTile(x, y, Tile::Empty);
 								nextState.SetTile(tx, ty, tile);
+								SetLastMove(x, y, tx, ty);
 								if (!nextState.IsWhiteInCheck())
 								{
 									output.push_back(nextState);
@@ -1272,6 +1336,7 @@ void GameState::NextGameStates(std::vector<GameState>& output) const
 							CloneForNextMove;
 							nextState.SetTile(x, y, Tile::Empty);
 							nextState.SetTile(tx, ty, tile);
+							SetLastMove(x, y, tx, ty);
 							if (!nextState.IsWhiteInCheck())
 							{
 								output.push_back(nextState);
@@ -1285,6 +1350,7 @@ void GameState::NextGameStates(std::vector<GameState>& output) const
 								CloneForNextMove;
 								nextState.SetTile(x, y, Tile::Empty);
 								nextState.SetTile(tx, ty, tile);
+								SetLastMove(x, y, tx, ty);
 								if (!nextState.IsWhiteInCheck())
 								{
 									output.push_back(nextState);
@@ -1306,6 +1372,7 @@ void GameState::NextGameStates(std::vector<GameState>& output) const
 						nextState.SetTile(x, y, Tile::Empty);
 						nextState.SetTile(x, y - 1, tile);
 						nextState.whiteKingX = x; nextState.whiteKingY = y - 1;
+						SetLastMove(x, y, x, y - 1);
 						if (!nextState.IsWhiteInCheck())
 						{
 							nextState.castlesAvailable &= castlesAvailableModifier;
@@ -1319,6 +1386,7 @@ void GameState::NextGameStates(std::vector<GameState>& output) const
 						nextState.SetTile(x, y, Tile::Empty);
 						nextState.SetTile(x, y + 1, tile);
 						nextState.whiteKingX = x; nextState.whiteKingY = y + 1;
+						SetLastMove(x, y, x, y + 1);
 						if (!nextState.IsWhiteInCheck())
 						{
 							nextState.castlesAvailable &= castlesAvailableModifier;
@@ -1334,6 +1402,7 @@ void GameState::NextGameStates(std::vector<GameState>& output) const
 							nextState.SetTile(x, y, Tile::Empty);
 							nextState.SetTile(x - 1, y, tile);
 							nextState.whiteKingX = x - 1; nextState.whiteKingY = y;
+							SetLastMove(x, y, x - 1, y);
 							if (!nextState.IsWhiteInCheck())
 							{
 								nextState.castlesAvailable &= castlesAvailableModifier;
@@ -1347,6 +1416,7 @@ void GameState::NextGameStates(std::vector<GameState>& output) const
 							nextState.SetTile(x, y, Tile::Empty);
 							nextState.SetTile(x - 1, y - 1, tile);
 							nextState.whiteKingX = x - 1; nextState.whiteKingY = y - 1;
+							SetLastMove(x, y, x - 1, y - 1);
 							if (!nextState.IsWhiteInCheck())
 							{
 								nextState.castlesAvailable &= castlesAvailableModifier;
@@ -1360,6 +1430,7 @@ void GameState::NextGameStates(std::vector<GameState>& output) const
 							nextState.SetTile(x, y, Tile::Empty);
 							nextState.SetTile(x - 1, y + 1, tile);
 							nextState.whiteKingX = x - 1; nextState.whiteKingY = y + 1;
+							SetLastMove(x, y, x - 1, y + 1);
 							if (!nextState.IsWhiteInCheck())
 							{
 								nextState.castlesAvailable &= castlesAvailableModifier;
@@ -1376,6 +1447,7 @@ void GameState::NextGameStates(std::vector<GameState>& output) const
 							nextState.SetTile(x, y, Tile::Empty);
 							nextState.SetTile(x + 1, y, tile);
 							nextState.whiteKingX = x + 1; nextState.whiteKingY = y;
+							SetLastMove(x, y, x + 1, y);
 							if (!nextState.IsWhiteInCheck())
 							{
 								nextState.castlesAvailable &= castlesAvailableModifier;
@@ -1389,6 +1461,7 @@ void GameState::NextGameStates(std::vector<GameState>& output) const
 							nextState.SetTile(x, y, Tile::Empty);
 							nextState.SetTile(x + 1, y - 1, tile);
 							nextState.whiteKingX = x + 1; nextState.whiteKingY = y - 1;
+							SetLastMove(x, y, x + 1, y - 1);
 							if (!nextState.IsWhiteInCheck())
 							{
 								nextState.castlesAvailable &= castlesAvailableModifier;
@@ -1402,6 +1475,7 @@ void GameState::NextGameStates(std::vector<GameState>& output) const
 							nextState.SetTile(x, y, Tile::Empty);
 							nextState.SetTile(x + 1, y + 1, tile);
 							nextState.whiteKingX = x + 1; nextState.whiteKingY = y + 1;
+							SetLastMove(x, y, x + 1, y + 1);
 							if (!nextState.IsWhiteInCheck())
 							{
 								nextState.castlesAvailable &= castlesAvailableModifier;
@@ -1427,6 +1501,7 @@ void GameState::NextGameStates(std::vector<GameState>& output) const
 					nextState.SetTile(5, 0, Tile::WhiteRook);
 					nextState.SetTile(6, 0, Tile::WhiteKing);
 					nextState.whiteKingX = 6;
+					SetLastMove(4, 0, 6, 0);
 					if (!nextState.IsWhiteInCheck())
 					{
 						nextState.castlesAvailable &= CastleMove::BlackKingSide | CastleMove::BlackQueenSide;
@@ -1446,6 +1521,7 @@ void GameState::NextGameStates(std::vector<GameState>& output) const
 					nextState.SetTile(2, 0, Tile::WhiteKing);
 					nextState.SetTile(3, 0, Tile::WhiteRook);
 					nextState.whiteKingX = 2;
+					SetLastMove(4, 0, 2, 0);
 					if (!nextState.IsWhiteInCheck())
 					{
 						nextState.castlesAvailable &= CastleMove::BlackKingSide | CastleMove::BlackQueenSide;
@@ -1474,6 +1550,7 @@ void GameState::NextGameStates(std::vector<GameState>& output) const
 							CloneForNextMove;
 							nextState.SetTile(x, 1, Tile::Empty);
 							nextState.SetTile(x, 0, Tile::BlackQueen);
+							SetLastMove(x, 1, x, 0);
 							if (!nextState.IsBlackInCheck())
 							{
 								output.push_back(nextState);
@@ -1482,6 +1559,7 @@ void GameState::NextGameStates(std::vector<GameState>& output) const
 							CloneForNextMove;
 							nextState.SetTile(x, 1, Tile::Empty);
 							nextState.SetTile(x, 0, Tile::BlackKnight);
+							SetLastMove(x, 1, x, 0);
 							if (!nextState.IsBlackInCheck())
 							{
 								output.push_back(nextState);
@@ -1490,6 +1568,7 @@ void GameState::NextGameStates(std::vector<GameState>& output) const
 							CloneForNextMove;
 							nextState.SetTile(x, 1, Tile::Empty);
 							nextState.SetTile(x, 0, Tile::BlackBishop);
+							SetLastMove(x, 1, x, 0);
 							if (!nextState.IsBlackInCheck())
 							{
 								output.push_back(nextState);
@@ -1498,6 +1577,7 @@ void GameState::NextGameStates(std::vector<GameState>& output) const
 							CloneForNextMove;
 							nextState.SetTile(x, 1, Tile::Empty);
 							nextState.SetTile(x, 0, Tile::BlackRook);
+							SetLastMove(x, 1, x, 0);
 							if (!nextState.IsBlackInCheck())
 							{
 								output.push_back(nextState);
@@ -1509,6 +1589,7 @@ void GameState::NextGameStates(std::vector<GameState>& output) const
 							CloneForNextMove;
 							nextState.SetTile(x, y, Tile::Empty);
 							nextState.SetTile(x, y - 1, Tile::BlackPawn);
+							SetLastMove(x, y, x, y - 1);
 							if (!nextState.IsBlackInCheck())
 							{
 								output.push_back(nextState);
@@ -1520,6 +1601,7 @@ void GameState::NextGameStates(std::vector<GameState>& output) const
 								CloneForNextMove;
 								nextState.SetTile(x, 6, Tile::Empty);
 								nextState.SetTile(x, 4, Tile::BlackPawn);
+								SetLastMove(x, 6, x, 4);
 								if (!nextState.IsBlackInCheck())
 								{
 									nextState.enPassantPawn = x;
@@ -1536,6 +1618,7 @@ void GameState::NextGameStates(std::vector<GameState>& output) const
 							CloneForNextMove;
 							nextState.SetTile(x, 1, Tile::Empty);
 							nextState.SetTile(x + 1, 0, Tile::BlackQueen);
+							SetLastMove(x, 1, x + 1, 0);
 							if (!nextState.IsBlackInCheck())
 							{
 								output.push_back(nextState);
@@ -1544,6 +1627,7 @@ void GameState::NextGameStates(std::vector<GameState>& output) const
 							CloneForNextMove;
 							nextState.SetTile(x, 1, Tile::Empty);
 							nextState.SetTile(x + 1, 0, Tile::BlackKnight);
+							SetLastMove(x, 1, x + 1, 0);
 							if (!nextState.IsBlackInCheck())
 							{
 								output.push_back(nextState);
@@ -1552,6 +1636,7 @@ void GameState::NextGameStates(std::vector<GameState>& output) const
 							CloneForNextMove;
 							nextState.SetTile(x, 1, Tile::Empty);
 							nextState.SetTile(x + 1, 0, Tile::BlackBishop);
+							SetLastMove(x, 1, x + 1, 0);
 							if (!nextState.IsBlackInCheck())
 							{
 								output.push_back(nextState);
@@ -1560,6 +1645,7 @@ void GameState::NextGameStates(std::vector<GameState>& output) const
 							CloneForNextMove;
 							nextState.SetTile(x, 1, Tile::Empty);
 							nextState.SetTile(x + 1, 0, Tile::BlackRook);
+							SetLastMove(x, 1, x + 1, 0);
 							if (!nextState.IsBlackInCheck())
 							{
 								output.push_back(nextState);
@@ -1571,6 +1657,7 @@ void GameState::NextGameStates(std::vector<GameState>& output) const
 							CloneForNextMove;
 							nextState.SetTile(x, y, Tile::Empty);
 							nextState.SetTile(x + 1, y - 1, Tile::BlackPawn);
+							SetLastMove(x, y, x + 1, y - 1);
 							if (!nextState.IsBlackInCheck())
 							{
 								output.push_back(nextState);
@@ -1585,6 +1672,7 @@ void GameState::NextGameStates(std::vector<GameState>& output) const
 							CloneForNextMove;
 							nextState.SetTile(x, 1, Tile::Empty);
 							nextState.SetTile(x - 1, 0, Tile::BlackQueen);
+							SetLastMove(x, 1, x - 1, 0);
 							if (!nextState.IsBlackInCheck())
 							{
 								output.push_back(nextState);
@@ -1593,6 +1681,7 @@ void GameState::NextGameStates(std::vector<GameState>& output) const
 							CloneForNextMove;
 							nextState.SetTile(x, 1, Tile::Empty);
 							nextState.SetTile(x - 1, 0, Tile::BlackKnight);
+							SetLastMove(x, 1, x - 1, 0);
 							if (!nextState.IsBlackInCheck())
 							{
 								output.push_back(nextState);
@@ -1601,6 +1690,7 @@ void GameState::NextGameStates(std::vector<GameState>& output) const
 							CloneForNextMove;
 							nextState.SetTile(x, 1, Tile::Empty);
 							nextState.SetTile(x - 1, 0, Tile::BlackBishop);
+							SetLastMove(x, 1, x - 1, 0);
 							if (!nextState.IsBlackInCheck())
 							{
 								output.push_back(nextState);
@@ -1609,6 +1699,7 @@ void GameState::NextGameStates(std::vector<GameState>& output) const
 							CloneForNextMove;
 							nextState.SetTile(x, 1, Tile::Empty);
 							nextState.SetTile(x - 1, 0, Tile::BlackRook);
+							SetLastMove(x, 1, x - 1, 0);
 							if (!nextState.IsBlackInCheck())
 							{
 								output.push_back(nextState);
@@ -1620,6 +1711,7 @@ void GameState::NextGameStates(std::vector<GameState>& output) const
 							CloneForNextMove;
 							nextState.SetTile(x, y, Tile::Empty);
 							nextState.SetTile(x - 1, y - 1, Tile::BlackPawn);
+							SetLastMove(x, y, x - 1, y - 1);
 							if (!nextState.IsBlackInCheck())
 							{
 								output.push_back(nextState);
@@ -1633,6 +1725,7 @@ void GameState::NextGameStates(std::vector<GameState>& output) const
 						nextState.SetTile(x, y, Tile::Empty);
 						nextState.SetTile(enPassantPawn, 3, Tile::Empty);
 						nextState.SetTile(enPassantPawn, 2, Tile::BlackPawn);
+						SetLastMove(x, y, enPassantPawn, 2);
 						if (!nextState.IsBlackInCheck())
 						{
 							output.push_back(nextState);
@@ -1658,6 +1751,7 @@ void GameState::NextGameStates(std::vector<GameState>& output) const
 							CloneForNextMove;
 							nextState.SetTile(x, y, Tile::Empty);
 							nextState.SetTile(tx, y, tile);
+							SetLastMove(x, y, tx, y);
 							if (!nextState.IsBlackInCheck())
 							{
 								nextState.castlesAvailable &= castlesAvailableModifier;
@@ -1672,6 +1766,7 @@ void GameState::NextGameStates(std::vector<GameState>& output) const
 								CloneForNextMove;
 								nextState.SetTile(x, y, Tile::Empty);
 								nextState.SetTile(tx, y, tile);
+								SetLastMove(x, y, tx, y);
 								if (!nextState.IsBlackInCheck())
 								{
 									nextState.castlesAvailable &= castlesAvailableModifier;
@@ -1689,6 +1784,7 @@ void GameState::NextGameStates(std::vector<GameState>& output) const
 							CloneForNextMove;
 							nextState.SetTile(x, y, Tile::Empty);
 							nextState.SetTile(tx, y, tile);
+							SetLastMove(x, y, tx, y);
 							if (!nextState.IsBlackInCheck())
 							{
 								nextState.castlesAvailable &= castlesAvailableModifier;
@@ -1703,6 +1799,7 @@ void GameState::NextGameStates(std::vector<GameState>& output) const
 								CloneForNextMove;
 								nextState.SetTile(x, y, Tile::Empty);
 								nextState.SetTile(tx, y, tile);
+								SetLastMove(x, y, tx, y);
 								if (!nextState.IsBlackInCheck())
 								{
 									nextState.castlesAvailable &= castlesAvailableModifier;
@@ -1720,6 +1817,7 @@ void GameState::NextGameStates(std::vector<GameState>& output) const
 							CloneForNextMove;
 							nextState.SetTile(x, y, Tile::Empty);
 							nextState.SetTile(x, ty, tile);
+							SetLastMove(x, y, x, ty);
 							if (!nextState.IsBlackInCheck())
 							{
 								nextState.castlesAvailable &= castlesAvailableModifier;
@@ -1734,6 +1832,7 @@ void GameState::NextGameStates(std::vector<GameState>& output) const
 								CloneForNextMove;
 								nextState.SetTile(x, y, Tile::Empty);
 								nextState.SetTile(x, ty, tile);
+								SetLastMove(x, y, x, ty);
 								if (!nextState.IsBlackInCheck())
 								{
 									nextState.castlesAvailable &= castlesAvailableModifier;
@@ -1751,6 +1850,7 @@ void GameState::NextGameStates(std::vector<GameState>& output) const
 							CloneForNextMove;
 							nextState.SetTile(x, y, Tile::Empty);
 							nextState.SetTile(x, ty, tile);
+							SetLastMove(x, y, x, ty);
 							if (!nextState.IsBlackInCheck())
 							{
 								nextState.castlesAvailable &= castlesAvailableModifier;
@@ -1765,6 +1865,7 @@ void GameState::NextGameStates(std::vector<GameState>& output) const
 								CloneForNextMove;
 								nextState.SetTile(x, y, Tile::Empty);
 								nextState.SetTile(x, ty, tile);
+								SetLastMove(x, y, x, ty);
 								if (!nextState.IsBlackInCheck())
 								{
 									nextState.castlesAvailable &= castlesAvailableModifier;
@@ -1785,6 +1886,7 @@ void GameState::NextGameStates(std::vector<GameState>& output) const
 							CloneForNextMove;
 							nextState.SetTile(x, y, Tile::Empty);
 							nextState.SetTile(x - 2, y - 1, tile);
+							SetLastMove(x, y, x - 2, y - 1);
 							if (!nextState.IsBlackInCheck())
 							{
 								output.push_back(nextState);
@@ -1796,6 +1898,7 @@ void GameState::NextGameStates(std::vector<GameState>& output) const
 							CloneForNextMove;
 							nextState.SetTile(x, y, Tile::Empty);
 							nextState.SetTile(x - 2, y + 1, tile);
+							SetLastMove(x, y, x - 2, y + 1);
 							if (!nextState.IsBlackInCheck())
 							{
 								output.push_back(nextState);
@@ -1810,6 +1913,7 @@ void GameState::NextGameStates(std::vector<GameState>& output) const
 							CloneForNextMove;
 							nextState.SetTile(x, y, Tile::Empty);
 							nextState.SetTile(x - 1, y - 2, tile);
+							SetLastMove(x, y, x - 1, y - 2);
 							if (!nextState.IsBlackInCheck())
 							{
 								output.push_back(nextState);
@@ -1821,6 +1925,7 @@ void GameState::NextGameStates(std::vector<GameState>& output) const
 							CloneForNextMove;
 							nextState.SetTile(x, y, Tile::Empty);
 							nextState.SetTile(x - 1, y + 2, tile);
+							SetLastMove(x, y, x - 1, y + 2);
 							if (!nextState.IsBlackInCheck())
 							{
 								output.push_back(nextState);
@@ -1835,6 +1940,7 @@ void GameState::NextGameStates(std::vector<GameState>& output) const
 							CloneForNextMove;
 							nextState.SetTile(x, y, Tile::Empty);
 							nextState.SetTile(x + 2, y - 1, tile);
+							SetLastMove(x, y, x + 2, y - 1);
 							if (!nextState.IsBlackInCheck())
 							{
 								output.push_back(nextState);
@@ -1846,6 +1952,7 @@ void GameState::NextGameStates(std::vector<GameState>& output) const
 							CloneForNextMove;
 							nextState.SetTile(x, y, Tile::Empty);
 							nextState.SetTile(x + 2, y + 1, tile);
+							SetLastMove(x, y, x + 2, y + 1);
 							if (!nextState.IsBlackInCheck())
 							{
 								output.push_back(nextState);
@@ -1860,6 +1967,7 @@ void GameState::NextGameStates(std::vector<GameState>& output) const
 							CloneForNextMove;
 							nextState.SetTile(x, y, Tile::Empty);
 							nextState.SetTile(x + 1, y - 2, tile);
+							SetLastMove(x, y, x + 1, y - 2);
 							if (!nextState.IsBlackInCheck())
 							{
 								output.push_back(nextState);
@@ -1871,6 +1979,7 @@ void GameState::NextGameStates(std::vector<GameState>& output) const
 							CloneForNextMove;
 							nextState.SetTile(x, y, Tile::Empty);
 							nextState.SetTile(x + 1, y + 2, tile);
+							SetLastMove(x, y, x + 1, y + 2);
 							if (!nextState.IsBlackInCheck())
 							{
 								output.push_back(nextState);
@@ -1890,6 +1999,7 @@ void GameState::NextGameStates(std::vector<GameState>& output) const
 							CloneForNextMove;
 							nextState.SetTile(x, y, Tile::Empty);
 							nextState.SetTile(tx, ty, tile);
+							SetLastMove(x, y, tx, ty);
 							if (!nextState.IsBlackInCheck())
 							{
 								output.push_back(nextState);
@@ -1903,6 +2013,7 @@ void GameState::NextGameStates(std::vector<GameState>& output) const
 								CloneForNextMove;
 								nextState.SetTile(x, y, Tile::Empty);
 								nextState.SetTile(tx, ty, tile);
+								SetLastMove(x, y, tx, ty);
 								if (!nextState.IsBlackInCheck())
 								{
 									output.push_back(nextState);
@@ -1923,6 +2034,7 @@ void GameState::NextGameStates(std::vector<GameState>& output) const
 							CloneForNextMove;
 							nextState.SetTile(x, y, Tile::Empty);
 							nextState.SetTile(tx, ty, tile);
+							SetLastMove(x, y, tx, ty);
 							if (!nextState.IsBlackInCheck())
 							{
 								output.push_back(nextState);
@@ -1936,6 +2048,7 @@ void GameState::NextGameStates(std::vector<GameState>& output) const
 								CloneForNextMove;
 								nextState.SetTile(x, y, Tile::Empty);
 								nextState.SetTile(tx, ty, tile);
+								SetLastMove(x, y, tx, ty);
 								if (!nextState.IsBlackInCheck())
 								{
 									output.push_back(nextState);
@@ -1956,6 +2069,7 @@ void GameState::NextGameStates(std::vector<GameState>& output) const
 							CloneForNextMove;
 							nextState.SetTile(x, y, Tile::Empty);
 							nextState.SetTile(tx, ty, tile);
+							SetLastMove(x, y, tx, ty);
 							if (!nextState.IsBlackInCheck())
 							{
 								output.push_back(nextState);
@@ -1969,6 +2083,7 @@ void GameState::NextGameStates(std::vector<GameState>& output) const
 								CloneForNextMove;
 								nextState.SetTile(x, y, Tile::Empty);
 								nextState.SetTile(tx, ty, tile);
+								SetLastMove(x, y, tx, ty);
 								if (!nextState.IsBlackInCheck())
 								{
 									output.push_back(nextState);
@@ -1989,6 +2104,7 @@ void GameState::NextGameStates(std::vector<GameState>& output) const
 							CloneForNextMove;
 							nextState.SetTile(x, y, Tile::Empty);
 							nextState.SetTile(tx, ty, tile);
+							SetLastMove(x, y, tx, ty);
 							if (!nextState.IsBlackInCheck())
 							{
 								output.push_back(nextState);
@@ -2002,6 +2118,7 @@ void GameState::NextGameStates(std::vector<GameState>& output) const
 								CloneForNextMove;
 								nextState.SetTile(x, y, Tile::Empty);
 								nextState.SetTile(tx, ty, tile);
+								SetLastMove(x, y, tx, ty);
 								if (!nextState.IsBlackInCheck())
 								{
 									output.push_back(nextState);
@@ -2023,6 +2140,7 @@ void GameState::NextGameStates(std::vector<GameState>& output) const
 							CloneForNextMove;
 							nextState.SetTile(x, y, Tile::Empty);
 							nextState.SetTile(tx, y, tile);
+							SetLastMove(x, y, tx, y);
 							if (!nextState.IsBlackInCheck())
 							{
 								output.push_back(nextState);
@@ -2036,6 +2154,7 @@ void GameState::NextGameStates(std::vector<GameState>& output) const
 								CloneForNextMove;
 								nextState.SetTile(x, y, Tile::Empty);
 								nextState.SetTile(tx, y, tile);
+								SetLastMove(x, y, tx, y);
 								if (!nextState.IsBlackInCheck())
 								{
 									output.push_back(nextState);
@@ -2052,6 +2171,7 @@ void GameState::NextGameStates(std::vector<GameState>& output) const
 							CloneForNextMove;
 							nextState.SetTile(x, y, Tile::Empty);
 							nextState.SetTile(tx, y, tile);
+							SetLastMove(x, y, tx, y);
 							if (!nextState.IsBlackInCheck())
 							{
 								output.push_back(nextState);
@@ -2065,6 +2185,7 @@ void GameState::NextGameStates(std::vector<GameState>& output) const
 								CloneForNextMove;
 								nextState.SetTile(x, y, Tile::Empty);
 								nextState.SetTile(tx, y, tile);
+								SetLastMove(x, y, tx, y);
 								if (!nextState.IsBlackInCheck())
 								{
 									output.push_back(nextState);
@@ -2081,6 +2202,7 @@ void GameState::NextGameStates(std::vector<GameState>& output) const
 							CloneForNextMove;
 							nextState.SetTile(x, y, Tile::Empty);
 							nextState.SetTile(x, ty, tile);
+							SetLastMove(x, y, x, ty);
 							if (!nextState.IsBlackInCheck())
 							{
 								output.push_back(nextState);
@@ -2094,6 +2216,7 @@ void GameState::NextGameStates(std::vector<GameState>& output) const
 								CloneForNextMove;
 								nextState.SetTile(x, y, Tile::Empty);
 								nextState.SetTile(x, ty, tile);
+								SetLastMove(x, y, x, ty);
 								if (!nextState.IsBlackInCheck())
 								{
 									output.push_back(nextState);
@@ -2110,6 +2233,7 @@ void GameState::NextGameStates(std::vector<GameState>& output) const
 							CloneForNextMove;
 							nextState.SetTile(x, y, Tile::Empty);
 							nextState.SetTile(x, ty, tile);
+							SetLastMove(x, y, x, ty);
 							if (!nextState.IsBlackInCheck())
 							{
 								output.push_back(nextState);
@@ -2123,6 +2247,7 @@ void GameState::NextGameStates(std::vector<GameState>& output) const
 								CloneForNextMove;
 								nextState.SetTile(x, y, Tile::Empty);
 								nextState.SetTile(x, ty, tile);
+								SetLastMove(x, y, x, ty);
 								if (!nextState.IsBlackInCheck())
 								{
 									output.push_back(nextState);
@@ -2141,6 +2266,7 @@ void GameState::NextGameStates(std::vector<GameState>& output) const
 							CloneForNextMove;
 							nextState.SetTile(x, y, Tile::Empty);
 							nextState.SetTile(tx, ty, tile);
+							SetLastMove(x, y, tx, ty);
 							if (!nextState.IsBlackInCheck())
 							{
 								output.push_back(nextState);
@@ -2154,6 +2280,7 @@ void GameState::NextGameStates(std::vector<GameState>& output) const
 								CloneForNextMove;
 								nextState.SetTile(x, y, Tile::Empty);
 								nextState.SetTile(tx, ty, tile);
+								SetLastMove(x, y, tx, ty);
 								if (!nextState.IsBlackInCheck())
 								{
 									output.push_back(nextState);
@@ -2174,6 +2301,7 @@ void GameState::NextGameStates(std::vector<GameState>& output) const
 							CloneForNextMove;
 							nextState.SetTile(x, y, Tile::Empty);
 							nextState.SetTile(tx, ty, tile);
+							SetLastMove(x, y, tx, ty);
 							if (!nextState.IsBlackInCheck())
 							{
 								output.push_back(nextState);
@@ -2187,6 +2315,7 @@ void GameState::NextGameStates(std::vector<GameState>& output) const
 								CloneForNextMove;
 								nextState.SetTile(x, y, Tile::Empty);
 								nextState.SetTile(tx, ty, tile);
+								SetLastMove(x, y, tx, ty);
 								if (!nextState.IsBlackInCheck())
 								{
 									output.push_back(nextState);
@@ -2207,6 +2336,7 @@ void GameState::NextGameStates(std::vector<GameState>& output) const
 							CloneForNextMove;
 							nextState.SetTile(x, y, Tile::Empty);
 							nextState.SetTile(tx, ty, tile);
+							SetLastMove(x, y, tx, ty);
 							if (!nextState.IsBlackInCheck())
 							{
 								output.push_back(nextState);
@@ -2220,6 +2350,7 @@ void GameState::NextGameStates(std::vector<GameState>& output) const
 								CloneForNextMove;
 								nextState.SetTile(x, y, Tile::Empty);
 								nextState.SetTile(tx, ty, tile);
+								SetLastMove(x, y, tx, ty);
 								if (!nextState.IsBlackInCheck())
 								{
 									output.push_back(nextState);
@@ -2240,6 +2371,7 @@ void GameState::NextGameStates(std::vector<GameState>& output) const
 							CloneForNextMove;
 							nextState.SetTile(x, y, Tile::Empty);
 							nextState.SetTile(tx, ty, tile);
+							SetLastMove(x, y, tx, ty);
 							if (!nextState.IsBlackInCheck())
 							{
 								output.push_back(nextState);
@@ -2253,6 +2385,7 @@ void GameState::NextGameStates(std::vector<GameState>& output) const
 								CloneForNextMove;
 								nextState.SetTile(x, y, Tile::Empty);
 								nextState.SetTile(tx, ty, tile);
+								SetLastMove(x, y, tx, ty);
 								if (!nextState.IsBlackInCheck())
 								{
 									output.push_back(nextState);
@@ -2274,6 +2407,7 @@ void GameState::NextGameStates(std::vector<GameState>& output) const
 						nextState.SetTile(x, y, Tile::Empty);
 						nextState.SetTile(x, y - 1, tile);
 						nextState.blackKingX = x; nextState.blackKingY = y - 1;
+						SetLastMove(x, y, x, y - 1);
 						if (!nextState.IsBlackInCheck())
 						{
 							nextState.castlesAvailable &= castlesAvailableModifier;
@@ -2287,6 +2421,7 @@ void GameState::NextGameStates(std::vector<GameState>& output) const
 						nextState.SetTile(x, y, Tile::Empty);
 						nextState.SetTile(x, y + 1, tile);
 						nextState.blackKingX = x; nextState.blackKingY = y + 1;
+						SetLastMove(x, y, x, y + 1);
 						if (!nextState.IsBlackInCheck())
 						{
 							nextState.castlesAvailable &= castlesAvailableModifier;
@@ -2302,6 +2437,7 @@ void GameState::NextGameStates(std::vector<GameState>& output) const
 							nextState.SetTile(x, y, Tile::Empty);
 							nextState.SetTile(x - 1, y, tile);
 							nextState.blackKingX = x - 1; nextState.blackKingY = y;
+							SetLastMove(x, y, x - 1, y);
 							if (!nextState.IsBlackInCheck())
 							{
 								nextState.castlesAvailable &= castlesAvailableModifier;
@@ -2315,6 +2451,7 @@ void GameState::NextGameStates(std::vector<GameState>& output) const
 							nextState.SetTile(x, y, Tile::Empty);
 							nextState.SetTile(x - 1, y - 1, tile);
 							nextState.blackKingX = x - 1; nextState.blackKingY = y - 1;
+							SetLastMove(x, y, x - 1, y - 1);
 							if (!nextState.IsBlackInCheck())
 							{
 								nextState.castlesAvailable &= castlesAvailableModifier;
@@ -2328,6 +2465,7 @@ void GameState::NextGameStates(std::vector<GameState>& output) const
 							nextState.SetTile(x, y, Tile::Empty);
 							nextState.SetTile(x - 1, y + 1, tile);
 							nextState.blackKingX = x - 1; nextState.blackKingY = y + 1;
+							SetLastMove(x, y, x - 1, y + 1);
 							if (!nextState.IsBlackInCheck())
 							{
 								nextState.castlesAvailable &= castlesAvailableModifier;
@@ -2344,6 +2482,7 @@ void GameState::NextGameStates(std::vector<GameState>& output) const
 							nextState.SetTile(x, y, Tile::Empty);
 							nextState.SetTile(x + 1, y, tile);
 							nextState.blackKingX = x + 1; nextState.blackKingY = y;
+							SetLastMove(x, y, x + 1, y);
 							if (!nextState.IsBlackInCheck())
 							{
 								nextState.castlesAvailable &= castlesAvailableModifier;
@@ -2357,6 +2496,7 @@ void GameState::NextGameStates(std::vector<GameState>& output) const
 							nextState.SetTile(x, y, Tile::Empty);
 							nextState.SetTile(x + 1, y - 1, tile);
 							nextState.blackKingX = x + 1; nextState.blackKingY = y - 1;
+							SetLastMove(x, y, x + 1, y - 1);
 							if (!nextState.IsBlackInCheck())
 							{
 								nextState.castlesAvailable &= castlesAvailableModifier;
@@ -2370,6 +2510,7 @@ void GameState::NextGameStates(std::vector<GameState>& output) const
 							nextState.SetTile(x, y, Tile::Empty);
 							nextState.SetTile(x + 1, y + 1, tile);
 							nextState.blackKingX = x + 1; nextState.blackKingY = y + 1;
+							SetLastMove(x, y, x + 1, y + 1);
 							if (!nextState.IsBlackInCheck())
 							{
 								nextState.castlesAvailable &= castlesAvailableModifier;
@@ -2395,6 +2536,7 @@ void GameState::NextGameStates(std::vector<GameState>& output) const
 					nextState.SetTile(5, 7, Tile::BlackRook);
 					nextState.SetTile(6, 7, Tile::BlackKing);
 					nextState.blackKingX = 6;
+					SetLastMove(4, 7, 6, 7);
 					if (!nextState.IsBlackInCheck())
 					{
 						nextState.castlesAvailable &= CastleMove::WhiteKingSide | CastleMove::WhiteQueenSide;
@@ -2414,6 +2556,7 @@ void GameState::NextGameStates(std::vector<GameState>& output) const
 					nextState.SetTile(2, 7, Tile::BlackKing);
 					nextState.SetTile(3, 7, Tile::BlackRook);
 					nextState.blackKingX = 2;
+					SetLastMove(4, 7, 2, 7);
 					if (!nextState.IsBlackInCheck())
 					{
 						nextState.castlesAvailable &= CastleMove::WhiteKingSide | CastleMove::WhiteQueenSide;
@@ -2425,12 +2568,65 @@ void GameState::NextGameStates(std::vector<GameState>& output) const
 	}
 }
 
+GameStateSignature GameState::UniqueSignature()
+{
+	if (computedSignature)
+	{
+		return signature;
+	}
+
+	computedSignature = true;
+	uint64_t emptyMask;
+	int_fast32_t pieceCount = 0;
+	memset(signature.data, 0, sizeof(signature.data));
+	
+	for (int_fast32_t tileIndex = 0; tileIndex < 64; tileIndex++)
+	{
+		if (board[tileIndex] != Tile::Empty)
+		{
+			uint8_t pieceValue;
+			switch (board[tileIndex])
+			{
+			case Tile::Empty:       pieceValue = 0; break;
+			case Tile::WhitePawn:   pieceValue = 1; break;
+			case Tile::WhiteRook:   pieceValue = 2; break;
+			case Tile::WhiteKnight: pieceValue = 3; break;
+			case Tile::WhiteBishop: pieceValue = 4; break;
+			case Tile::WhiteQueen:  pieceValue = 5; break;
+			case Tile::WhiteKing:   pieceValue = 6; break;
+			case Tile::BlackPawn:   pieceValue = 7; break;
+			case Tile::BlackRook:   pieceValue = 8; break;
+			case Tile::BlackKnight: pieceValue = 9; break;
+			case Tile::BlackBishop: pieceValue = 10; break;
+			case Tile::BlackQueen:  pieceValue = 11; break;
+			case Tile::BlackKing:   pieceValue = 12; break;
+			}
+
+			signature.data[pieceCount / 2] |= pieceValue << ((pieceCount % 2) * 4);
+			emptyMask |= 1;
+			pieceCount += 1;
+		}
+		emptyMask <<= 1;
+	}
+	// pieceCount is at greatest 32, at most up to index 15 has been filled
+	*reinterpret_cast<uint64_t *>(&signature.data[24]) = emptyMask;
+	signature.data[23] = static_cast<uint8_t>(enPassantPawn);
+	signature.data[22] = static_cast<uint8_t>(castlesAvailable);
+}
+
 std::ostream& operator <<(std::ostream& os, GameState const & gameState)
 {
 	for (int_fast32_t y = 7; y >= 0; y--)
 	{
 		for (int_fast32_t x = 0; x < 8; x++)
 		{
+#ifdef PRINT_LAST_MOVE
+			if ((x == gameState.lastMoveStartX && y == gameState.lastMoveStartY) || (x == gameState.lastMoveEndX && y == gameState.lastMoveEndY))
+			{
+				os << "\033[47;30m";
+				// os << "\033[1m";
+			}
+#endif
 			switch (gameState.GetTile(x, y))
 			{
 				case Tile::Empty:       os << "-- "; break;
@@ -2447,6 +2643,13 @@ std::ostream& operator <<(std::ostream& os, GameState const & gameState)
 				case Tile::BlackQueen:  os << "BQ "; break;
 				case Tile::BlackKing:   os << "BK "; break;
 			}
+
+#ifdef PRINT_LAST_MOVE
+			if ((x == gameState.lastMoveStartX && y == gameState.lastMoveStartY) || (x == gameState.lastMoveEndX && y == gameState.lastMoveEndY))
+			{
+				os << "\033[0m";
+			}
+#endif
 		}
 		os << "\n";
 	}

@@ -138,7 +138,7 @@ ConsPlayerManager::~ConsPlayerManager()
 	checkCublas(cublasDestroy_v2(cublasHandle));
 }
 
-float ConsPlayerManager::PlayGame(ConsPlayer const * whitePlayer, ConsPlayer const * blackPlayer)
+float ConsPlayerManager::PlayGame(ConsPlayer const * whitePlayer, ConsPlayer const * blackPlayer, int_fast32_t maxMoveEvaluationCount, EvaluationCache * whiteCache, EvaluationCache * blackCache)
 {
 	this->SetupPlayers(whitePlayer, blackPlayer);
 
@@ -146,7 +146,7 @@ float ConsPlayerManager::PlayGame(ConsPlayer const * whitePlayer, ConsPlayer con
 	for (int_fast32_t moveIndex = 0; moveIndex < ConsPlayerConstants::maxGameMoveCount; moveIndex++)
 	{
 		GameState nextGameState;
-		bool complete = this->PlayMove(gameState, &nextGameState);
+		bool complete = this->PlayMove(gameState, &nextGameState, maxMoveEvaluationCount, gameState.move == Tile::White ? whiteCache : blackCache);
 		
 		// std::cout << gameState;
 		// std::cin.ignore();
@@ -173,9 +173,9 @@ float ConsPlayerManager::PlayGame(ConsPlayer const * whitePlayer, ConsPlayer con
 	// TODO: we could possibly detect infinite loops early (or provide the relevant info to the network)
 	if (ConsPlayerConstants::tieBreakWithPieceScore)
 	{
-		// For context the starting value of both sides is 41.52
+		// For context the starting value of both sides is 4152
 		// Note that the total value on the board can, in rare cases due to promotion, but significantly higher
-		float pieceScore = (gameState.WhitePieceScore() - gameState.BlackPieceScore()) / 50.0f;
+		float pieceScore = (gameState.WhitePieceScore() - gameState.BlackPieceScore()) / 5000.0f;
 		if (pieceScore < -0.9f)
 		{
 			pieceScore = -0.9f;
@@ -192,7 +192,7 @@ float ConsPlayerManager::PlayGame(ConsPlayer const * whitePlayer, ConsPlayer con
 	}
 }
 
-bool ConsPlayerManager::PlayMove(GameState const & gameState, GameState * nextGameState)
+bool ConsPlayerManager::PlayMove(GameState & gameState, GameState * nextGameState, int_fast32_t maxMoveEvaluationCount, EvaluationCache * evaluationCache)
 {
 	Tile playerColor = gameState.move;
 
@@ -203,7 +203,8 @@ bool ConsPlayerManager::PlayMove(GameState const & gameState, GameState * nextGa
 	int_fast32_t rootNodeCount = 0;
 
 	// state node cv, state node index
-	std::priority_queue<std::pair<float, int_fast32_t>, std::vector<std::pair<float, int_fast32_t>>, std::greater<std::pair<float, int_fast32_t>>> unevaluatedNodes;
+	using NodeQueue = std::priority_queue<std::pair<float, int_fast32_t>, std::vector<std::pair<float, int_fast32_t>>, std::less<std::pair<float, int_fast32_t>>>;
+	NodeQueue unevaluatedNodes;
 	
 	std::vector<GameState> nextGameStates;
 	gameState.NextGameStates(nextGameStates);
@@ -213,14 +214,14 @@ bool ConsPlayerManager::PlayMove(GameState const & gameState, GameState * nextGa
 		return true;
 	}
 
-	// I have encountered stack overflow due to this, we could possibly try just increasing the stack size but for now we'll just put it on the heap
-	GameStateNode * nodes = new GameStateNode[ConsPlayerConstants::maxMoveEvaluationCount + 256];
+	// This is large enough to cause a stack overflow; use heap
+	GameStateNode * nodes = new GameStateNode[maxMoveEvaluationCount + 256];
 
 	for (int_fast32_t rootNodeIndex = 0; rootNodeIndex < rootNodeCount; rootNodeIndex++)
 	{
 		GameState& rootState = nextGameStates[rootNodeIndex];
 		float tv, cv;
-		this->EvaluateGameState(rootState, gameState, playerColor, 1, &tv, &cv);
+		this->EvaluateGameState(rootState, gameState, playerColor, 1, &tv, &cv, evaluationCache);
 
 		nodes[nodeIndex] = GameStateNode
 		{
@@ -232,23 +233,38 @@ bool ConsPlayerManager::PlayMove(GameState const & gameState, GameState * nextGa
 			-1, // parentIndex
 			-1, // childrenCount
 		};
-		// only add states with positive cv
-		if (cv > 0)
-		{
-			unevaluatedNodes.push(std::pair<float, int_fast32_t>(cv, nodeIndex));
-		}
+		// TODO: maybe reenable in the future; only add states with positive cv
+		// if (cv > 0)
+		// {
+		// 	unevaluatedNodes.push(std::pair<float, int_fast32_t>(cv, nodeIndex));
+		// }
+		unevaluatedNodes.push(std::pair<float, int_fast32_t>(cv, nodeIndex));
 		nodeIndex++;
 	}
 
-	while (nodeIndex < ConsPlayerConstants::maxMoveEvaluationCount && unevaluatedNodes.size() > 0)
+	while (nodeIndex < maxMoveEvaluationCount && unevaluatedNodes.size() > 0)
 	{
+		// // TESTING
+		// std::cout << "================================" << std::endl;
+		// NodeQueue copied(unevaluatedNodes);
+		// while (copied.size() > 0)
+		// {
+		// 	float score = copied.top().first;
+		// 	int_fast32_t nodeIndex = copied.top().second;
+		// 	copied.pop();
+		// 	std::cout << score << " " << nodeIndex << std::endl;
+		// 	std::cout << nodes[nodeIndex].state << std::endl;
+		// }
+		// std::cin.ignore();
+		// // TESTING
+
 		// node with the highest consideration value
 		int_fast32_t currentNodeIndex = unevaluatedNodes.top().second;
 		unevaluatedNodes.pop();
 		GameStateNode& currentNode = nodes[currentNodeIndex];
 
 		nextGameStates.clear();
-		gameState.NextGameStates(nextGameStates);
+		currentNode.state.NextGameStates(nextGameStates);
 		if (nextGameStates.size() == 0)
 		{
 			// game has finished; we can set the minimax terminal value directly
@@ -267,12 +283,19 @@ bool ConsPlayerManager::PlayMove(GameState const & gameState, GameState * nextGa
 			continue;
 		}
 
+		// std::cout << "Processing board: " << std::endl << currentNode.state << std::endl;
+		// std::cin.ignore();
+
 		currentNode.childrenCount = nextGameStates.size();
 		for (int_fast32_t nextStateIndex = 0; nextStateIndex < nextGameStates.size(); nextStateIndex++)
 		{
 			GameState& nextState = nextGameStates[nextStateIndex];
 			float tv, cv;
 			EvaluateGameState(nextState, currentNode.state, playerColor, currentNode.depth + 1, &tv, &cv);
+
+			// std::cout << "Evaluated next board (cv: " << cv << ", tv: " << tv << ") " << nodeIndex << " / " << ConsPlayerConstants::maxMoveEvaluationCount << std::endl;
+			// std::cout << nextState << std::endl;
+			// std::cin.ignore();
 
 			nodes[nodeIndex] =
 			{
@@ -284,11 +307,12 @@ bool ConsPlayerManager::PlayMove(GameState const & gameState, GameState * nextGa
 				-1, // parentIndex
 				-1, // childrenCount
 			};
-			// only add states with positive cv
-			if (cv > 0)
-			{
-				unevaluatedNodes.push(std::pair<float, int_fast32_t>(cv, nodeIndex));
-			}
+			// TODO: maybe reenable in the future; only add states with positive cv
+			// if (cv > 0)
+			// {
+			// 	unevaluatedNodes.push(std::pair<float, int_fast32_t>(cv, nodeIndex));
+			// }
+			unevaluatedNodes.push(std::pair<float, int_fast32_t>(cv, nodeIndex));
 			currentNode.childrenIndices[nextStateIndex] = nodeIndex;
 			nodeIndex++;
 		}
@@ -370,11 +394,22 @@ float ConsPlayerManager::MinimaxScoreNode(GameStateNode const & node, GameStateN
 }
 
 // Sets tv (terminal value) and cv (consideration value)
-void ConsPlayerManager::EvaluateGameState(GameState const & state, GameState const & previousState, Tile playerColor, int_fast32_t depth, float * tv, float * cv)
+void ConsPlayerManager::EvaluateGameState(GameState & state, GameState & previousState, Tile playerColor, int_fast32_t depth, float * tv, float * cv, EvaluationCache * playerCache)
 {
-	// for testing
-	// *cv = 1.0f;
-	// *tv = state.WhitePieceScore() - state.BlackPieceScore() + (rand() % 10000) / 10000f;
+	// // Testing foundational logic
+	// *tv = state.WhitePieceScore() - state.BlackPieceScore() + (rand() % 100 / 1000.0f);
+	// *cv = -depth;
+
+	GameStateSignature & signature = state.UniqueSignature();
+	if (playerCache != nullptr && playerCache->count(signature) > 0)
+	{
+		std::pair<float, float> result = playerCache->at(signature);
+		*tv = result.first;
+		*cv = result.second;
+		return;
+	}
+	
+	// TODO: We have encountered a cudaErrorLaunchTimeout (702), is this due to some underlying issue or should we just disable/increase the timeout
 
 	SetDeviceInput(state, previousState, depth);
 	if (playerColor == Tile::White)
@@ -390,6 +425,11 @@ void ConsPlayerManager::EvaluateGameState(GameState const & state, GameState con
 		checkCuda(cudaDeviceSynchronize());
 	}
 	GetDeviceOutput(tv, cv);
+
+	if (playerCache != nullptr)
+	{
+		(*playerCache)[signature] = { *tv, *cv };
+	}
 }
 
 void ConsPlayerManager::SetupPlayers(ConsPlayer const * whitePlayer, ConsPlayer const * blackPlayer)
@@ -474,21 +514,23 @@ void ConsPlayerManager::SetDeviceInput(GameState const & gameState, GameState co
 			{
 				GameState const & state = s == 0 ? gameState : previousGameState;
 				bool invert = gameState.move == Tile::White;
+				// flip board vertically if invert
+				int yi = invert ? 7-y : y;
 				switch (state.GetTile(x, y))
 				{
-					case Tile::Empty:       tvcvInput[ConsPlayerConstants::tvInputSize + ((s * 8 + y) * 8 + x) * 13] = 1.0f; break;
-					case Tile::WhitePawn:   tvcvInput[ConsPlayerConstants::tvInputSize + ((s * 8 + y) * 8 + x) * 13 + (invert ?  7 :  1)] = 1.0f; break;
-					case Tile::WhiteRook:   tvcvInput[ConsPlayerConstants::tvInputSize + ((s * 8 + y) * 8 + x) * 13 + (invert ?  8 :  2)] = 1.0f; break;
-					case Tile::WhiteKnight: tvcvInput[ConsPlayerConstants::tvInputSize + ((s * 8 + y) * 8 + x) * 13 + (invert ?  9 :  3)] = 1.0f; break;
-					case Tile::WhiteBishop: tvcvInput[ConsPlayerConstants::tvInputSize + ((s * 8 + y) * 8 + x) * 13 + (invert ? 10 :  4)] = 1.0f; break;
-					case Tile::WhiteQueen:  tvcvInput[ConsPlayerConstants::tvInputSize + ((s * 8 + y) * 8 + x) * 13 + (invert ? 11 :  5)] = 1.0f; break;
-					case Tile::WhiteKing:   tvcvInput[ConsPlayerConstants::tvInputSize + ((s * 8 + y) * 8 + x) * 13 + (invert ? 12 :  6)] = 1.0f; break;
-					case Tile::BlackPawn:   tvcvInput[ConsPlayerConstants::tvInputSize + ((s * 8 + y) * 8 + x) * 13 + (invert ?  1 :  7)] = 1.0f; break;
-					case Tile::BlackRook:   tvcvInput[ConsPlayerConstants::tvInputSize + ((s * 8 + y) * 8 + x) * 13 + (invert ?  2 :  8)] = 1.0f; break;
-					case Tile::BlackKnight: tvcvInput[ConsPlayerConstants::tvInputSize + ((s * 8 + y) * 8 + x) * 13 + (invert ?  3 :  9)] = 1.0f; break;
-					case Tile::BlackBishop: tvcvInput[ConsPlayerConstants::tvInputSize + ((s * 8 + y) * 8 + x) * 13 + (invert ?  4 : 10)] = 1.0f; break;
-					case Tile::BlackQueen:  tvcvInput[ConsPlayerConstants::tvInputSize + ((s * 8 + y) * 8 + x) * 13 + (invert ?  5 : 11)] = 1.0f; break;
-					case Tile::BlackKing:   tvcvInput[ConsPlayerConstants::tvInputSize + ((s * 8 + y) * 8 + x) * 13 + (invert ?  6 : 12)] = 1.0f; break;
+					case Tile::Empty:       tvcvInput[ConsPlayerConstants::tvInputSize + ((s * 8 + yi) * 8 + x) * 13] = 1.0f; break;
+					case Tile::WhitePawn:   tvcvInput[ConsPlayerConstants::tvInputSize + ((s * 8 + yi) * 8 + x) * 13 + (invert ?  7 :  1)] = 1.0f; break;
+					case Tile::WhiteRook:   tvcvInput[ConsPlayerConstants::tvInputSize + ((s * 8 + yi) * 8 + x) * 13 + (invert ?  8 :  2)] = 1.0f; break;
+					case Tile::WhiteKnight: tvcvInput[ConsPlayerConstants::tvInputSize + ((s * 8 + yi) * 8 + x) * 13 + (invert ?  9 :  3)] = 1.0f; break;
+					case Tile::WhiteBishop: tvcvInput[ConsPlayerConstants::tvInputSize + ((s * 8 + yi) * 8 + x) * 13 + (invert ? 10 :  4)] = 1.0f; break;
+					case Tile::WhiteQueen:  tvcvInput[ConsPlayerConstants::tvInputSize + ((s * 8 + yi) * 8 + x) * 13 + (invert ? 11 :  5)] = 1.0f; break;
+					case Tile::WhiteKing:   tvcvInput[ConsPlayerConstants::tvInputSize + ((s * 8 + yi) * 8 + x) * 13 + (invert ? 12 :  6)] = 1.0f; break;
+					case Tile::BlackPawn:   tvcvInput[ConsPlayerConstants::tvInputSize + ((s * 8 + yi) * 8 + x) * 13 + (invert ?  1 :  7)] = 1.0f; break;
+					case Tile::BlackRook:   tvcvInput[ConsPlayerConstants::tvInputSize + ((s * 8 + yi) * 8 + x) * 13 + (invert ?  2 :  8)] = 1.0f; break;
+					case Tile::BlackKnight: tvcvInput[ConsPlayerConstants::tvInputSize + ((s * 8 + yi) * 8 + x) * 13 + (invert ?  3 :  9)] = 1.0f; break;
+					case Tile::BlackBishop: tvcvInput[ConsPlayerConstants::tvInputSize + ((s * 8 + yi) * 8 + x) * 13 + (invert ?  4 : 10)] = 1.0f; break;
+					case Tile::BlackQueen:  tvcvInput[ConsPlayerConstants::tvInputSize + ((s * 8 + yi) * 8 + x) * 13 + (invert ?  5 : 11)] = 1.0f; break;
+					case Tile::BlackKing:   tvcvInput[ConsPlayerConstants::tvInputSize + ((s * 8 + yi) * 8 + x) * 13 + (invert ?  6 : 12)] = 1.0f; break;
 				}
 			}
 		}

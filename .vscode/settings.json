@@ -78,6 +78,7 @@
 		"thread": "cpp",
 		"unordered_map": "cpp",
 		"xhash": "cpp",
-		"__nullptr": "cpp"
+		"__nullptr": "cpp",
+		"unordered_set": "cpp"
 	}
 }

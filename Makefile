@@ -1,6 +1,7 @@
 # nvcc
 NVCC      := nvcc
 NVCCFLAGS := --std=c++17
+# NVCCFLAGS += -O0
 NVCCFLAGS += -O3
 NVCCFLAGS += -g -G
 NVCCFLAGS += --include-path "C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v11.1/include"

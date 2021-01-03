@@ -1,5 +1,6 @@
 #include <iostream>
 #include "trainer.h"
+#include "tester.h"
 
 int main()
 {
@@ -7,6 +8,8 @@ int main()
 	{
 		Trainer trainer;
 		trainer.Train();
+		// Tester tester;
+		// tester.RoundRobin(1, 20);
 	}
 	catch(const std::exception& e)
 	{

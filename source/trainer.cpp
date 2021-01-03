@@ -190,7 +190,9 @@ void Trainer::PlayGeneration(std::array<ConsPlayer const *, ConsPlayerConstants:
 	int_fast32_t cacheHits = 0;
 	int_fast32_t totalGameCount = ConsPlayerConstants::generationSize * ConsPlayerConstants::generationTournamentSize * (ConsPlayerConstants::generationTournamentSize - 1);
 
+	std::uniform_int_distribution<int_fast32_t> maxEvaluationCountDistribution(ConsPlayerConstants::maxMoveEvaluationCountLow, ConsPlayerConstants::maxMoveEvaluationCountHigh);
 	TournamentSet tournamentSet(randomEngine, generation);
+	std::array<EvaluationCache, ConsPlayerConstants::generationSize> playerEvaluationCaches;
 	
 	float cachedResults[ConsPlayerConstants::generationSize][ConsPlayerConstants::generationSize];
 	for (int whitePlayerIndex = 0; whitePlayerIndex < ConsPlayerConstants::generationSize; whitePlayerIndex++)
@@ -224,7 +226,13 @@ void Trainer::PlayGeneration(std::array<ConsPlayer const *, ConsPlayerConstants:
 				float result = cachedResults[generationWhitePlayerIndex][generationBlackPlayerIndex];
 				if (isnan(result))
 				{
-					result = playerManager.PlayGame(tournamentSet.tournaments[tournamentIndex][whitePlayerIndex], tournamentSet.tournaments[tournamentIndex][blackPlayerIndex]);
+					result = playerManager.PlayGame(
+						tournamentSet.tournaments[tournamentIndex][whitePlayerIndex],
+						tournamentSet.tournaments[tournamentIndex][blackPlayerIndex],
+						maxEvaluationCountDistribution(randomEngine) //,
+						// &playerEvaluationCaches[generationWhitePlayerIndex],
+						// &playerEvaluationCaches[generationBlackPlayerIndex]
+					);
 					cachedResults[generationWhitePlayerIndex][generationBlackPlayerIndex] = result;
 				}
 				else
