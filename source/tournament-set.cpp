@@ -1,6 +1,22 @@
 #include <iostream>
 #include "tournament-set.h"
 
+// 1 2 3 4 5 6
+
+// . . _ . _ _
+// . . _ _ _ .
+// . _ . _ . _
+// _ . _ . . _
+// _ _ . . _ .
+// _ _ . _ . .
+
+// . . . _ _ _
+// . . _ _ _ .
+// . _ _ . . _
+// _ . . _ . _
+// _ _ . . _ .
+// _ _ _ . . .
+
 TournamentSet::TournamentSet(std::mt19937 & randomEngine, ConsPlayer const * const * generation)
 {
 	ClearTournaments();
@@ -9,12 +25,12 @@ TournamentSet::TournamentSet(std::mt19937 & randomEngine, ConsPlayer const * con
 	int_fast32_t remainingPlayerTournaments[ConsPlayerConstants::generationSize];
 	for (int_fast32_t playerIndex = 0; playerIndex < ConsPlayerConstants::generationSize; playerIndex++)
 	{
-		remainingPlayerTournaments[playerIndex] = ConsPlayerConstants::generationTournamentSize;
+		remainingPlayerTournaments[playerIndex] = ConsPlayerConstants::playerTournamentCount;
 	}
 
-	for (int_fast32_t tournamentIndex = 0; tournamentIndex < ConsPlayerConstants::generationSize; tournamentIndex++)
+	for (int_fast32_t tournamentIndex = 0; tournamentIndex < ConsPlayerConstants::tournamentCount; tournamentIndex++)
 	{
-		int_fast32_t remainingTournamentCount = ConsPlayerConstants::generationSize - tournamentIndex;
+		int_fast32_t remainingTournamentCount = ConsPlayerConstants::tournamentCount - tournamentIndex;
 		for (int_fast32_t tournamentPlayerIndex = 0; tournamentPlayerIndex < ConsPlayerConstants::generationTournamentSize; tournamentPlayerIndex++)
 		{
 			// Find any players which have remainingTournamentCount assignments left and force that player to be part of this tournament
@@ -72,7 +88,7 @@ TournamentSet::TournamentSet(std::mt19937 & randomEngine, ConsPlayer const * con
 
 void TournamentSet::ClearTournaments()
 {
-	for (int_fast32_t tournamentIndex = 0; tournamentIndex < ConsPlayerConstants::generationSize; tournamentIndex++)
+	for (int_fast32_t tournamentIndex = 0; tournamentIndex < ConsPlayerConstants::tournamentCount; tournamentIndex++)
 	{
 		for (int_fast32_t tournamentPlayerIndex = 0; tournamentPlayerIndex < ConsPlayerConstants::generationTournamentSize; tournamentPlayerIndex++)
 		{
@@ -112,7 +128,7 @@ bool TournamentSet::IsPlayerInTournament(int_fast32_t tournamentIndex, ConsPlaye
 std::ostream& operator <<(std::ostream& os, TournamentSet const & tournamentSet)
 {
 	os << "TournamentSet [" << std::endl;
-	for (int_fast32_t tournamentIndex = 0; tournamentIndex < ConsPlayerConstants::generationSize; tournamentIndex++)
+	for (int_fast32_t tournamentIndex = 0; tournamentIndex < ConsPlayerConstants::tournamentCount; tournamentIndex++)
 	{
 		os << "  ";
 		for (int_fast32_t tournamentPlayerIndex = 0; tournamentPlayerIndex < ConsPlayerConstants::generationTournamentSize; tournamentPlayerIndex++)

@@ -6,7 +6,7 @@
 class Tester
 {
 public:
-	static constexpr char * saveLocation = "E:/top/development/cons-chess-players";
+	static constexpr char * saveLocation = "E:/top/development/cons-chess-players-3";
 	ConsPlayerManager playerManager;
 
 	Tester();

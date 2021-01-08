@@ -178,20 +178,26 @@ void Trainer::DeleteGeneration()
 void Trainer::IterateGeneration()
 {
 	randomEngine.seed(ConsPlayerConstants::seed + ITERATE_GENERATION_SEED_OFFSET + generationNumber);
-	std::array<ConsPlayer const *, ConsPlayerConstants::generationSize> winners;
+	std::array<ConsPlayer const *, ConsPlayerConstants::tournamentCount> winners;
 	PlayGeneration(winners);
 	GenerateNextGeneration(winners);
 	SaveGeneration();
 }
 
-void Trainer::PlayGeneration(std::array<ConsPlayer const *, ConsPlayerConstants::generationSize> & winners)
+void Trainer::PlayGeneration(std::array<ConsPlayer const *, ConsPlayerConstants::tournamentCount> & winners)
 {
 	int_fast32_t gamesPlayed = 0;
 	int_fast32_t cacheHits = 0;
-	int_fast32_t totalGameCount = ConsPlayerConstants::generationSize * ConsPlayerConstants::generationTournamentSize * (ConsPlayerConstants::generationTournamentSize - 1);
+	int_fast32_t totalGameCount = ConsPlayerConstants::tournamentCount * ConsPlayerConstants::generationTournamentSize * (ConsPlayerConstants::generationTournamentSize - 1);
 
 	std::uniform_int_distribution<int_fast32_t> maxEvaluationCountDistribution(ConsPlayerConstants::maxMoveEvaluationCountLow, ConsPlayerConstants::maxMoveEvaluationCountHigh);
+	// TODO: a conservative strategy to try if we have diffuculty getting results would be to halve the tournament count and have each winner be copied twice to the next generation;
+	//       once mutated and once unchanged
 	TournamentSet tournamentSet(randomEngine, generation);
+	
+	// std::cout << tournamentSet;
+	// std::cin.ignore();
+
 	std::array<EvaluationCache, ConsPlayerConstants::generationSize> playerEvaluationCaches;
 	
 	float cachedResults[ConsPlayerConstants::generationSize][ConsPlayerConstants::generationSize];
@@ -203,7 +209,7 @@ void Trainer::PlayGeneration(std::array<ConsPlayer const *, ConsPlayerConstants:
 		}
 	}
 
-	for (int_fast32_t tournamentIndex = 0; tournamentIndex < ConsPlayerConstants::generationSize; tournamentIndex++)
+	for (int_fast32_t tournamentIndex = 0; tournamentIndex < ConsPlayerConstants::tournamentCount; tournamentIndex++)
 	{
 		std::array<std::pair<float, ConsPlayer const *>, ConsPlayerConstants::generationTournamentSize> scores;
 		for (int_fast32_t tournamentPlayerIndex = 0; tournamentPlayerIndex < ConsPlayerConstants::generationTournamentSize; tournamentPlayerIndex++)
@@ -267,17 +273,35 @@ ConsPlayer const * Trainer::FindWinner(std::array<std::pair<float, ConsPlayer co
 	return scores[indexDistribution(randomEngine)].second;
 }
 
-void Trainer::GenerateNextGeneration(std::array<ConsPlayer const *, ConsPlayerConstants::generationSize> & winners)
+void Trainer::GenerateNextGeneration(std::array<ConsPlayer const *, ConsPlayerConstants::tournamentCount> & winners)
 {
+	std::cout << "Tournament winners: ";
+	for (int_fast32_t winnerIndex = 0; winnerIndex < ConsPlayerConstants::tournamentCount; winnerIndex++)
+	{
+		ConsPlayer const * winner = winners[winnerIndex];
+		int_fast32_t index = -1;
+		for (int_fast32_t playerIndex = 0; playerIndex < ConsPlayerConstants::generationSize; playerIndex++)
+		{
+			if (generation[playerIndex] == winner)
+			{
+				std::cout << playerIndex << " ";
+				break;
+			}
+		}
+		std::cout << std::endl;
+	}
+
 	ConsPlayer * nextGeneration[ConsPlayerConstants::generationSize];
 	generationNumber++;
 
-	for (int_fast32_t playerIndex = 0; playerIndex < ConsPlayerConstants::generationSize; playerIndex++)
+	for (int_fast32_t winnerIndex = 0; winnerIndex < ConsPlayerConstants::tournamentCount; winnerIndex++)
 	{
-		std::cout << "Generation " << generationNumber << " mutation: " << playerIndex << " / " << ConsPlayerConstants::generationSize << "\r";
-		nextGeneration[playerIndex] = winners[playerIndex]->Clone();
-		MutatePlayer(nextGeneration[playerIndex], playerIndex);
+		std::cout << "Generation " << generationNumber << " mutation: " << winnerIndex * 2 << " / " << ConsPlayerConstants::generationSize << "\r";
+		nextGeneration[winnerIndex * 2] = winners[winnerIndex]->Clone();
+		nextGeneration[winnerIndex * 2 + 1] = winners[winnerIndex]->Clone();
+		MutatePlayer(nextGeneration[winnerIndex * 2 + 1]);
 	}
+
 	DeleteGeneration();
 	for (int_fast32_t playerIndex = 0; playerIndex < ConsPlayerConstants::generationSize; playerIndex++)
 	{
@@ -286,7 +310,7 @@ void Trainer::GenerateNextGeneration(std::array<ConsPlayer const *, ConsPlayerCo
 	std::cout << "Generation " << generationNumber << " mutation complete            " << std::endl;
 }
 
-void Trainer::MutatePlayer(ConsPlayer * player, int_fast32_t playerIndex)
+void Trainer::MutatePlayer(ConsPlayer * player)
 {
 	std::uniform_real_distribution<float> mutationChanceDistribution(-1.0f, 1.0f);
 	std::normal_distribution mutationAmountDistribution(0.0f, ConsPlayerConstants::mutationAmount);

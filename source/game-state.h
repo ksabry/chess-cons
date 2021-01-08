@@ -193,7 +193,7 @@ namespace std
 	};
 }
 
-#define PRINT_LAST_MOVE
+// #define PRINT_LAST_MOVE
 
 #define CloneForNextMove \
 nextState = *this;\

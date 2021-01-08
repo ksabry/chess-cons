@@ -6,8 +6,8 @@ class TournamentSet
 {
 public:
 	TournamentSet(std::mt19937 & randomEngine, ConsPlayer const * const * generation);
-	ConsPlayer const * tournaments[ConsPlayerConstants::generationSize][ConsPlayerConstants::generationTournamentSize];
-	int_fast32_t tournamentsByIndex[ConsPlayerConstants::generationSize][ConsPlayerConstants::generationTournamentSize];
+	ConsPlayer const * tournaments[ConsPlayerConstants::tournamentCount][ConsPlayerConstants::generationTournamentSize];
+	int_fast32_t tournamentsByIndex[ConsPlayerConstants::tournamentCount][ConsPlayerConstants::generationTournamentSize];
 
 private:
 	void ClearTournaments();

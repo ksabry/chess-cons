@@ -11,8 +11,10 @@ namespace ConsPlayerConstants
 	constexpr int_fast32_t cvInputSize = 2 * 64 * 13 + 1;
 	constexpr int_fast32_t inputSize = tvInputSize + cvInputSize;
 
-	constexpr int_fast32_t tvLayerSizes[] = { 1024, 512, 256, 256, 256 };
-	constexpr int_fast32_t cvLayerSizes[] = { 1024, 512, 256, 256, 256 };
+	// constexpr int_fast32_t tvLayerSizes[] = { 1024, 512, 256, 256, 256 };
+	// constexpr int_fast32_t cvLayerSizes[] = { 1024, 512, 256, 256, 256 };
+	constexpr int_fast32_t tvLayerSizes[] = { 256, 128 };
+	constexpr int_fast32_t cvLayerSizes[] = { 256, 128 };
 	constexpr int_fast32_t tvLayerCount = sizeof(tvLayerSizes) / sizeof(int_fast32_t);
 	constexpr int_fast32_t cvLayerCount = sizeof(cvLayerSizes) / sizeof(int_fast32_t);
 
@@ -21,10 +23,14 @@ namespace ConsPlayerConstants
 	constexpr int_fast32_t maxMoveEvaluationCountHigh = 1000;
 	constexpr bool tieBreakWithPieceScore = true;
 
-	constexpr int_fast32_t generationSize = 20;
+	constexpr int_fast32_t generationSize = 30;
 	constexpr int_fast32_t generationTournamentSize = 4;
-	constexpr float mutationRate = 0.05;
-	constexpr float mutationAmount = 0.05;
+	static_assert(generationSize % 2 == 0);
+	static_assert(generationTournamentSize % 2 == 0);
+	constexpr int_fast32_t tournamentCount = generationSize / 2;
+	constexpr int_fast32_t playerTournamentCount = generationTournamentSize / 2;
+	constexpr float mutationRate = 0.1;
+	constexpr float mutationAmount = 0.1;
 
 	constexpr int_fast32_t TVWeightCount()
 	{

@@ -13,7 +13,7 @@
 class Trainer
 {
 public:
-	static constexpr char * saveLocation = "E:/top/development/cons-chess-players";
+	static constexpr char * saveLocation = "E:/top/development/cons-chess-players-3";
 	std::mt19937 randomEngine;
 	ConsPlayer* generation[ConsPlayerConstants::generationSize];
 	int_fast32_t generationNumber;
@@ -36,10 +36,10 @@ private:
 	std::filesystem::path::string_type PlayerFilename(int_fast32_t generationNumber, int_fast32_t playerIndex);
 
 	void IterateGeneration();
-	void PlayGeneration(std::array<ConsPlayer const *, ConsPlayerConstants::generationSize> & winners);
-	void GenerateNextGeneration(std::array<ConsPlayer const *, ConsPlayerConstants::generationSize> & winners);
+	void PlayGeneration(std::array<ConsPlayer const *, ConsPlayerConstants::tournamentCount> & winners);
+	void GenerateNextGeneration(std::array<ConsPlayer const *, ConsPlayerConstants::tournamentCount> & winners);
 	ConsPlayer const * FindWinner(std::array<std::pair<float, ConsPlayer const *>, ConsPlayerConstants::generationTournamentSize> & scores);
 	// tournaments is (ConsPlayer *)[generationSize * tournamentSize]
 	void BuildTournaments(ConsPlayer ** tournaments);
-	void MutatePlayer(ConsPlayer * player, int_fast32_t playerIndex);
+	void MutatePlayer(ConsPlayer * player);
 };

@@ -1,4 +1,6 @@
 #include <string>
+#include <array>
+#include <algorithm>
 #include "tester.h"
 
 using namespace std::string_literals;
@@ -25,9 +27,21 @@ void Tester::RoundRobin(int_fast32_t whiteGeneration, int_fast32_t blackGenerati
 {
 	float totalResult = 0.0f;
 
-	for (int_fast32_t whitePlayerIndex = 0; whitePlayerIndex < ConsPlayerConstants::generationSize; whitePlayerIndex++)
+	std::array<int_fast32_t, ConsPlayerConstants::generationSize> whitePlayerIndices;
+	std::array<int_fast32_t, ConsPlayerConstants::generationSize> blackPlayerIndices;
+	for (int_fast32_t index = 0; index < ConsPlayerConstants::generationSize; index++)
 	{
-		for (int_fast32_t blackPlayerIndex = 0; blackPlayerIndex < ConsPlayerConstants::generationSize; blackPlayerIndex++)
+		whitePlayerIndices[index] = index;
+		blackPlayerIndices[index] = index;
+	}
+
+	std::mt19937 randomEngine(123);
+	std::shuffle(whitePlayerIndices.begin(), whitePlayerIndices.end(), randomEngine);
+	std::shuffle(blackPlayerIndices.begin(), blackPlayerIndices.end(), randomEngine);
+
+	for (int_fast32_t whitePlayerIndex : whitePlayerIndices)
+	{
+		for (int_fast32_t blackPlayerIndex : blackPlayerIndices)
 		{
 			std::cout << "Playing white (gen=" << whiteGeneration << ", player=" << whitePlayerIndex << ") vs black (gen=" << blackGeneration << ", player=" << blackPlayerIndex << ")" << std::endl;
 			float result = PlayGame(whiteGeneration, blackGeneration, whitePlayerIndex, blackPlayerIndex);

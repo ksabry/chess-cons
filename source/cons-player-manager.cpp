@@ -147,10 +147,10 @@ float ConsPlayerManager::PlayGame(ConsPlayer const * whitePlayer, ConsPlayer con
 	{
 		GameState nextGameState;
 		bool complete = this->PlayMove(gameState, &nextGameState, maxMoveEvaluationCount, gameState.move == Tile::White ? whiteCache : blackCache);
-		
+
 		// std::cout << gameState;
 		// std::cin.ignore();
-		
+
 		if (complete)
 		{
 			if (gameState.IsWhiteInCheck())
@@ -205,7 +205,7 @@ bool ConsPlayerManager::PlayMove(GameState & gameState, GameState * nextGameStat
 	// state node cv, state node index
 	using NodeQueue = std::priority_queue<std::pair<float, int_fast32_t>, std::vector<std::pair<float, int_fast32_t>>, std::less<std::pair<float, int_fast32_t>>>;
 	NodeQueue unevaluatedNodes;
-	
+
 	std::vector<GameState> nextGameStates;
 	gameState.NextGameStates(nextGameStates);
 	rootNodeCount = nextGameStates.size();
@@ -244,7 +244,7 @@ bool ConsPlayerManager::PlayMove(GameState & gameState, GameState * nextGameStat
 
 	while (nodeIndex < maxMoveEvaluationCount && unevaluatedNodes.size() > 0)
 	{
-		// // TESTING
+		// TESTING
 		// std::cout << "================================" << std::endl;
 		// NodeQueue copied(unevaluatedNodes);
 		// while (copied.size() > 0)
@@ -252,11 +252,11 @@ bool ConsPlayerManager::PlayMove(GameState & gameState, GameState * nextGameStat
 		// 	float score = copied.top().first;
 		// 	int_fast32_t nodeIndex = copied.top().second;
 		// 	copied.pop();
-		// 	std::cout << score << " " << nodeIndex << std::endl;
-		// 	std::cout << nodes[nodeIndex].state << std::endl;
+		// 	std::cout << nodeIndex << " " << score << " " << nodes[nodeIndex].tv << std::endl;
+		// 	// std::cout << nodes[nodeIndex].state << std::endl;
 		// }
 		// std::cin.ignore();
-		// // TESTING
+		// TESTING
 
 		// node with the highest consideration value
 		int_fast32_t currentNodeIndex = unevaluatedNodes.top().second;
@@ -400,15 +400,19 @@ void ConsPlayerManager::EvaluateGameState(GameState & state, GameState & previou
 	// *tv = state.WhitePieceScore() - state.BlackPieceScore() + (rand() % 100 / 1000.0f);
 	// *cv = -depth;
 
-	GameStateSignature & signature = state.UniqueSignature();
-	if (playerCache != nullptr && playerCache->count(signature) > 0)
+	GameStateSignature * signature;
+	if (playerCache != nullptr)
 	{
-		std::pair<float, float> result = playerCache->at(signature);
-		*tv = result.first;
-		*cv = result.second;
-		return;
+		signature = &state.UniqueSignature();
+		if (playerCache->count(*signature) > 0)
+		{
+			std::pair<float, float> result = playerCache->at(*signature);
+			*tv = result.first;
+			*cv = result.second;
+			return;
+		}
 	}
-	
+
 	// TODO: We have encountered a cudaErrorLaunchTimeout (702), is this due to some underlying issue or should we just disable/increase the timeout
 
 	SetDeviceInput(state, previousState, depth);
@@ -428,7 +432,7 @@ void ConsPlayerManager::EvaluateGameState(GameState & state, GameState & previou
 
 	if (playerCache != nullptr)
 	{
-		(*playerCache)[signature] = { *tv, *cv };
+		(*playerCache)[*signature] = { *tv, *cv };
 	}
 }
 
@@ -594,7 +598,7 @@ void ConsPlayerManager::EvaluateTV(float * weights, float * biases)
 		float * layerBiases = biases + biasOffset;
 
 		PropogateFeedForwardLayer(lastLayer, lastSize, nextLayer, nextSize, layerWeights, layerBiases, layerIndex != ConsPlayerConstants::tvLayerCount);
-		
+
 		weightOffset += lastSize * nextSize;
 		biasOffset += nextSize;
 	}

@@ -2612,6 +2612,7 @@ GameStateSignature GameState::UniqueSignature()
 	*reinterpret_cast<uint64_t *>(&signature.data[24]) = emptyMask;
 	signature.data[23] = static_cast<uint8_t>(enPassantPawn);
 	signature.data[22] = static_cast<uint8_t>(castlesAvailable);
+	return signature;
 }
 
 std::ostream& operator <<(std::ostream& os, GameState const & gameState)
