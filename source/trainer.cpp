@@ -191,8 +191,6 @@ void Trainer::PlayGeneration(std::array<ConsPlayer const *, ConsPlayerConstants:
 	int_fast32_t totalGameCount = ConsPlayerConstants::tournamentCount * ConsPlayerConstants::generationTournamentSize * (ConsPlayerConstants::generationTournamentSize - 1);
 
 	std::uniform_int_distribution<int_fast32_t> maxEvaluationCountDistribution(ConsPlayerConstants::maxMoveEvaluationCountLow, ConsPlayerConstants::maxMoveEvaluationCountHigh);
-	// TODO: a conservative strategy to try if we have diffuculty getting results would be to halve the tournament count and have each winner be copied twice to the next generation;
-	//       once mutated and once unchanged
 	TournamentSet tournamentSet(randomEngine, generation);
 	
 	// std::cout << tournamentSet;
@@ -259,6 +257,22 @@ ConsPlayer const * Trainer::FindWinner(std::array<std::pair<float, ConsPlayer co
 {
 	std::sort(scores.begin(), scores.end(), std::greater<std::pair<float, ConsPlayer const *>>());
 
+	std::cout << "Tournament scores: ";
+	for (int_fast32_t playerIndex = 0; playerIndex < ConsPlayerConstants::generationTournamentSize; playerIndex++)
+	{
+		std::pair<float, ConsPlayer const *> score = scores[playerIndex];
+		int_fast32_t index = -1;
+		for (int_fast32_t playerIndex = 0; playerIndex < ConsPlayerConstants::generationSize; playerIndex++)
+		{
+			if (generation[playerIndex] == score.second)
+			{
+				std::cout << "P" << playerIndex << ": " << score.first << ", ";
+				break;
+			}
+		}
+	}
+	std::cout << std::endl;
+
 	// If there are multiple best scores randomly select from them
 	int_fast32_t equalScoreCount = 1;
 	while (equalScoreCount < scores.size())
@@ -270,7 +284,9 @@ ConsPlayer const * Trainer::FindWinner(std::array<std::pair<float, ConsPlayer co
 		equalScoreCount++;
 	}
 	std::uniform_int_distribution<int_fast32_t> indexDistribution(0, equalScoreCount - 1);
-	return scores[indexDistribution(randomEngine)].second;
+	std::pair<float, ConsPlayer const *> winningScore = scores[indexDistribution(randomEngine)];
+
+	return winningScore.second;
 }
 
 void Trainer::GenerateNextGeneration(std::array<ConsPlayer const *, ConsPlayerConstants::tournamentCount> & winners)
@@ -284,12 +300,12 @@ void Trainer::GenerateNextGeneration(std::array<ConsPlayer const *, ConsPlayerCo
 		{
 			if (generation[playerIndex] == winner)
 			{
-				std::cout << playerIndex << " ";
+				std::cout << "P" << playerIndex << " ";
 				break;
 			}
 		}
-		std::cout << std::endl;
 	}
+	std::cout << std::endl;
 
 	ConsPlayer * nextGeneration[ConsPlayerConstants::generationSize];
 	generationNumber++;

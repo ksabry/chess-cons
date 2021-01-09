@@ -6,10 +6,10 @@ int main()
 {
 	try
 	{
-		Trainer trainer;
-		trainer.Train();
-		// Tester tester;
-		// tester.RoundRobin(1, 12);
+		// Trainer trainer;
+		// trainer.Train();
+		Tester tester;
+		tester.RoundRobin(40, 1);
 	}
 	catch(const std::exception& e)
 	{

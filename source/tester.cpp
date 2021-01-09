@@ -26,6 +26,7 @@ Tester::~Tester()
 void Tester::RoundRobin(int_fast32_t whiteGeneration, int_fast32_t blackGeneration)
 {
 	float totalResult = 0.0f;
+	int_fast32_t playedGames = 0;
 
 	std::array<int_fast32_t, ConsPlayerConstants::generationSize> whitePlayerIndices;
 	std::array<int_fast32_t, ConsPlayerConstants::generationSize> blackPlayerIndices;
@@ -46,6 +47,7 @@ void Tester::RoundRobin(int_fast32_t whiteGeneration, int_fast32_t blackGenerati
 			std::cout << "Playing white (gen=" << whiteGeneration << ", player=" << whitePlayerIndex << ") vs black (gen=" << blackGeneration << ", player=" << blackPlayerIndex << ")" << std::endl;
 			float result = PlayGame(whiteGeneration, blackGeneration, whitePlayerIndex, blackPlayerIndex);
 			totalResult += result;
+			playedGames += 1;
 
 			if (result == 1)
 			{
@@ -61,6 +63,7 @@ void Tester::RoundRobin(int_fast32_t whiteGeneration, int_fast32_t blackGenerati
 			}
 			
 			std::cout << "Cumulative score " << totalResult << std::endl;
+			std::cout << "Average score per game " << totalResult / playedGames << std::endl;
 			// std::cin.ignore();
 		}
 	}
